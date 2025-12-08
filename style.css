@@ -1,0 +1,165 @@
+body {
+  box-sizing: border-box;
+}
+
+/* Animasi fade up */
+@keyframes fadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  opacity: 0;
+  animation: fadeUp 0.9s ease-out forwards;
+}
+
+.fade-up-delay-1 {
+  animation-delay: 0.15s;
+}
+.fade-up-delay-2 {
+  animation-delay: 0.3s;
+}
+.fade-up-delay-3 {
+  animation-delay: 0.45s;
+}
+.fade-up-delay-4 {
+  animation-delay: 0.6s;
+}
+
+/* Focus ring custom */
+.focus-outline:focus-visible {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+
+/* Background motif batik */
+.batik-pattern {
+  background-image:
+    radial-gradient(
+      circle at 20% 30%,
+      rgba(251, 191, 36, 0.08) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 70%,
+      rgba(34, 197, 94, 0.08) 0%,
+      transparent 50%
+    ),
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(251, 191, 36, 0.03) 10px,
+      rgba(251, 191, 36, 0.03) 20px
+    );
+}
+
+/* Background motif islami */
+.islamic-pattern {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 40px,
+      rgba(251, 191, 36, 0.05) 40px,
+      rgba(251, 191, 36, 0.05) 80px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 40px,
+      rgba(34, 197, 94, 0.05) 40px,
+      rgba(34, 197, 94, 0.05) 80px
+    );
+}
+
+.scroll-fade {
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+/* Kartu kalender bulan */
+.calendar-month-card {
+  background: linear-gradient(
+    135deg,
+    rgba(251, 191, 36, 0.05) 0%,
+    rgba(34, 197, 94, 0.05) 100%
+  );
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.calendar-month-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #fbbf24, #22c55e);
+  border-radius: 12px 12px 0 0;
+}
+
+/* Animasi float elemen */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.float-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Animasi hujan */
+@keyframes rain {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.rain-drop {
+  position: absolute;
+  width: 1px;
+  height: 20px;
+  background: linear-gradient(transparent, rgba(100, 200, 255, 0.4));
+  animation: rain linear infinite;
+}
+
+/* Rumput bergoyang */
+@keyframes sway {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+.grass-blade {
+  position: absolute;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to top, #10b981, transparent);
+  transform-origin: bottom;
+  animation: sway ease-in-out infinite;
+}
+
+/* View transition (dari kode asli) */
+@view-transition {
+  navigation: auto;
+}
