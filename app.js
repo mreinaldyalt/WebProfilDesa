@@ -338,8 +338,9 @@ function buildStaticLayout() {
   navBar.className = "w-full border-b border-yellow-500/20";
 
   const navInner = document.createElement("div");
-  navInner.className =
-    "max-w-7xl mx-auto px-6 py-5 flex items-center justify-between gap-4";
+navInner.className =
+  "max-w-7xl mx-auto px-4 py-3 md:px-6 md:py-5 flex items-center justify-between gap-3 md:gap-4";
+
 
   const brandWrap = document.createElement("div");
   brandWrap.className = "flex items-center gap-4";
@@ -370,10 +371,11 @@ function buildStaticLayout() {
   brandWrap.appendChild(brandText);
 
   const themeToggle = document.createElement("button");
-  themeToggle.id = "theme-toggle";
-  themeToggle.type = "button";
-  themeToggle.className =
-    "focus-outline px-5 py-2.5 rounded-full font-semibold shadow-lg transition-all duration-300 hover:scale-105 text-sm";
+themeToggle.id = "theme-toggle";
+themeToggle.type = "button";
+themeToggle.className =
+  "focus-outline px-4 py-2 md:px-5 md:py-2.5 rounded-full font-semibold shadow-lg transition-all duration-300 hover:scale-105 text-xs md:text-sm";
+
   themeToggle.setAttribute("aria-label", "Ganti tema terang/gelap");
   themeToggle.textContent = "🌙 Mode Terang";
 
@@ -387,34 +389,38 @@ function buildStaticLayout() {
     "w-full bg-gradient-to-r from-yellow-500/10 to-green-500/10";
 
   const menuInner = document.createElement("div");
-  menuInner.className =
-    "max-w-7xl mx-auto px-6 flex items-center justify-between gap-4 py-3";
+menuInner.className =
+  "max-w-7xl mx-auto px-4 py-2 md:px-6 md:py-3 flex items-center justify-between gap-2 md:gap-4";
+
 
   const menuLeft = document.createElement("div");
   menuLeft.className = "flex items-center gap-3";
 
   const profileBtn = document.createElement("button");
-  profileBtn.id = "nav-profile";
-  profileBtn.type = "button";
-  profileBtn.className =
-    "focus-outline px-6 py-2.5 rounded-full font-semibold shadow-md transition-all duration-300 hover:scale-105 text-sm";
+profileBtn.id = "nav-profile";
+profileBtn.type = "button";
+profileBtn.className =
+  "focus-outline px-4 py-2 md:px-6 md:py-2.5 rounded-full font-semibold shadow-md transition-all duration-300 hover:scale-105 text-xs md:text-sm";
+
   profileBtn.textContent = "🏡 Profil Desa";
 
   const calendarBtn = document.createElement("button");
-  calendarBtn.id = "nav-calendar";
-  calendarBtn.type = "button";
-  calendarBtn.className =
-    "focus-outline px-6 py-2.5 rounded-full font-medium transition-all duration-300 hover:scale-105 text-sm";
+calendarBtn.id = "nav-calendar";
+calendarBtn.type = "button";
+calendarBtn.className =
+  "focus-outline px-4 py-2 md:px-6 md:py-2.5 rounded-full font-medium transition-all duration-300 hover:scale-105 text-xs md:text-sm";
+
   calendarBtn.textContent = "📅 Kalender Kegiatan";
 
   menuLeft.appendChild(profileBtn);
   menuLeft.appendChild(calendarBtn);
 
   const editGalleryBtn = document.createElement("button");
-  editGalleryBtn.id = "edit-gallery-toggle";
-  editGalleryBtn.type = "button";
-  editGalleryBtn.className =
-    "focus-outline px-5 py-2 rounded-full font-medium transition-all duration-300 hover:scale-105 text-sm";
+editGalleryBtn.id = "edit-gallery-toggle";
+editGalleryBtn.type = "button";
+editGalleryBtn.className =
+  "focus-outline px-4 py-2 md:px-5 md:py-2 rounded-full font-medium transition-all duration-300 hover:scale-105 text-xs md:text-sm";
+
   editGalleryBtn.textContent = "🔒 Mode Edit";
 
   menuInner.appendChild(menuLeft);
@@ -438,10 +444,13 @@ function buildStaticLayout() {
 
   // hero
   const heroImageContainer = document.createElement("div");
-  heroImageContainer.id = "hero-image-container";
-  heroImageContainer.className =
-    "w-full rounded-3xl overflow-hidden shadow-2xl relative fade-up";
-  heroImageContainer.style.height = "400px";
+heroImageContainer.id = "hero-image-container";
+heroImageContainer.className =
+  "w-full rounded-3xl overflow-hidden shadow-2xl relative fade-up";
+
+const heroHeight = window.innerWidth < 640 ? "260px" : "380px";
+heroImageContainer.style.height = heroHeight;
+
 
   const heroGradient = document.createElement("div");
   heroGradient.id = "hero-gradient";
