@@ -111,10 +111,19 @@ function loadState() {
           : [];
       });
     }
+
+    // === TAMBAHAN: tema & tahun terakhir ===
+    if (typeof state.isLightTheme === "boolean") {
+      isLightTheme = state.isLightTheme;
+    }
+    if (typeof state.currentYear === "number") {
+      currentYear = state.currentYear;
+    }
   } catch (err) {
     console.error("Gagal load state:", err);
   }
 }
+
 
 function saveState() {
   try {
@@ -124,12 +133,15 @@ function saveState() {
       activitiesDescription,
       galleryItems,
       calendarEvents,
+      isLightTheme,   // disimpan
+      currentYear,    // disimpan
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (err) {
     console.error("Gagal save state:", err);
   }
 }
+
 
 // ===================== UTIL SVG & PATTERN =====================
 function createModernIcon() {
@@ -612,11 +624,16 @@ function buildStaticLayout() {
     "focus-outline px-4 py-2 rounded-full font-medium shadow-md transition-all duration-300 hover:scale-105 text-sm";
   yearPrev.textContent = "← Tahun Lalu";
 
-  const yearLabel = document.createElement("div");
-  yearLabel.id = "calendar-year-label";
-  yearLabel.className =
-    "px-6 py-2 rounded-full font-bold shadow-lg text-base";
-  yearLabel.textContent = currentYear.toString();
+  const yearLabel = document.createElement("input");
+yearLabel.id = "calendar-year-label";
+yearLabel.type = "number";
+yearLabel.className =
+  "px-6 py-2 rounded-full font-bold shadow-lg text-base text-center";
+yearLabel.value = currentYear.toString();
+yearLabel.setAttribute("min", "1900");
+yearLabel.setAttribute("max", "3000");
+yearLabel.setAttribute("aria-label", "Pilih tahun kalender");
+
 
   const yearNext = document.createElement("button");
   yearNext.id = "calendar-next-year";
@@ -667,13 +684,24 @@ function buildStaticLayout() {
   footerText.textContent = defaultConfig.footer_text;
 
   const footerNote = document.createElement("p");
-  footerNote.className = "text-xs opacity-70 text-center md:text-right";
-  footerNote.textContent =
-    "Website Profil Desa • Dibuat dengan Canva Code";
+footerNote.className = "text-xs opacity-70 text-center md:text-right";
 
-  footerInner.appendChild(footerText);
-  footerInner.appendChild(footerNote);
-  footer.appendChild(footerInner);
+// buat link instagram
+const igLink = document.createElement("a");
+igLink.href = "https://www.instagram.com/kknfasilkom5/";
+igLink.target = "_blank";
+igLink.rel = "noopener noreferrer";
+igLink.className = "inline-flex items-center gap-2";
+
+// logo instagram + teks
+igLink.innerHTML = "📷 <span>@kknfasilkom5</span>";
+
+footerNote.appendChild(igLink);
+
+footerInner.appendChild(footerText);
+footerInner.appendChild(footerNote);
+footer.appendChild(footerInner);
+
 
   wrapper.appendChild(header);
   wrapper.appendChild(main);
@@ -1480,7 +1508,14 @@ function setEventsForDate(year, month, day, events) {
 function renderCalendarYear(year) {
   if (!uiRefs.calendarGridContainer) return;
   uiRefs.calendarGridContainer.innerHTML = "";
-  uiRefs.calendarYearLabel.textContent = year.toString();
+
+  if (uiRefs.calendarYearLabel) {
+    if (uiRefs.calendarYearLabel.tagName === "INPUT") {
+      uiRefs.calendarYearLabel.value = year.toString();
+    } else {
+      uiRefs.calendarYearLabel.textContent = year.toString();
+    }
+  } // ← tambahkan penutup if di sini
 
   for (let month = 0; month < 12; month++) {
     const monthCard = document.createElement("div");
@@ -1520,7 +1555,8 @@ function renderCalendarYear(year) {
     monthHeader.appendChild(countLabel);
 
     const weekRow = document.createElement("div");
-    weekRow.className = "grid grid-cols-7 gap-1 text-xs font-semibold mb-2 opacity-70";
+    weekRow.className =
+      "grid grid-cols-7 gap-1 text-xs font-semibold mb-2 opacity-70";
     ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].forEach((d) => {
       const w = document.createElement("div");
       w.className = "text-center";
@@ -1574,6 +1610,7 @@ function renderCalendarYear(year) {
   const configNow = window.elementSdk ? window.elementSdk.config : defaultConfig;
   applyCalendarTheme(configNow);
 }
+
 
 function applyCalendarTheme(config) {
   const surface = config.surface_color || defaultConfig.surface_color;
@@ -1905,31 +1942,33 @@ function showPasswordPrompt(callback) {
 // ===================== INTERAKSI GLOBAL =====================
 function setupInteractions() {
   uiRefs.themeToggle.addEventListener("click", () => {
-    isLightTheme = !isLightTheme;
-    if (isLightTheme) {
-      const lightConfig = {
-        background_color: "#f0f4f8",
-        surface_color: "#ffffff",
-        text_color: "#1e293b",
-        primary_action_color: "#10b981",
-        secondary_action_color: "#3b82f6",
-      };
-      Object.assign(defaultConfig, lightConfig);
-      uiRefs.themeToggle.textContent = "🌙 Mode Gelap";
-    } else {
-      const darkConfig = {
-        background_color: "#0f172a",
-        surface_color: "#1e293b",
-        text_color: "#e2e8f0",
-        primary_action_color: "#10b981",
-        secondary_action_color: "#3b82f6",
-      };
-      Object.assign(defaultConfig, darkConfig);
-      uiRefs.themeToggle.textContent = "☀️ Mode Terang";
-    }
-    applyTheme(defaultConfig);
-    renderCalendarYear(currentYear);
-  });
+  isLightTheme = !isLightTheme;
+  if (isLightTheme) {
+    const lightConfig = {
+      background_color: "#f0f4f8",
+      surface_color: "#ffffff",
+      text_color: "#1e293b",
+      primary_action_color: "#10b981",
+      secondary_action_color: "#3b82f6",
+    };
+    Object.assign(defaultConfig, lightConfig);
+    uiRefs.themeToggle.textContent = "🌙 Mode Gelap";
+  } else {
+    const darkConfig = {
+      background_color: "#0f172a",
+      surface_color: "#1e293b",
+      text_color: "#e2e8f0",
+      primary_action_color: "#10b981",
+      secondary_action_color: "#3b82f6",
+    };
+    Object.assign(defaultConfig, darkConfig);
+    uiRefs.themeToggle.textContent = "☀️ Mode Terang";
+  }
+  applyTheme(defaultConfig);
+  renderCalendarYear(currentYear);
+  saveState(); // <-- simpan pilihan tema & tahun
+});
+
 
   uiRefs.profileNavBtn.addEventListener("click", () =>
     setActiveMenu("profile")
@@ -2013,15 +2052,44 @@ function setupInteractions() {
   });
 
   uiRefs.calendarPrevYearBtn.addEventListener("click", () => {
-    currentYear -= 1;
-    renderCalendarYear(currentYear);
-  });
+  currentYear -= 1;
+  renderCalendarYear(currentYear);
+  saveState(); // simpan tahun terakhir
+});
 
   uiRefs.calendarNextYearBtn.addEventListener("click", () => {
     currentYear += 1;
     renderCalendarYear(currentYear);
+    saveState();
   });
+
+  // === INPUT MANUAL TAHUN ===
+  if (uiRefs.calendarYearLabel && uiRefs.calendarYearLabel.tagName === "INPUT") {
+    const yearInput = uiRefs.calendarYearLabel;
+
+    const applyYearInput = () => {
+      const value = parseInt(yearInput.value, 10);
+      if (!isNaN(value) && value >= 1900 && value <= 3000) {
+        currentYear = value;
+        renderCalendarYear(currentYear);
+        saveState();
+      } else {
+        // kalau tidak valid, balikin ke tahun saat ini
+        yearInput.value = currentYear.toString();
+      }
+    };
+
+    yearInput.addEventListener("change", applyYearInput);
+
+    yearInput.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        applyYearInput();
+        yearInput.blur();
+      }
+    });
+  }
 }
+
 
 // ===================== INIT DARI CANVA / STANDALONE =====================
 function initElementSdk() {
@@ -2029,13 +2097,38 @@ function initElementSdk() {
   loadState();
 
   if (!window.elementSdk) {
-  // jalan sebagai halaman biasa (tanpa Canva)
-  buildStaticLayout();
-  applyTheme(defaultConfig);
-  setActiveMenu("profile");
-  updateHeroImage();          // <<< TAMBAHKAN BARIS INI
-  return;
-}
+    // jalan sebagai halaman biasa (tanpa Canva)
+    buildStaticLayout();
+
+    // pakai tema terakhir yang tersimpan
+    if (isLightTheme) {
+      const lightConfig = {
+        background_color: "#f0f4f8",
+        surface_color: "#ffffff",
+        text_color: "#1e293b",
+        primary_action_color: "#10b981",
+        secondary_action_color: "#3b82f6",
+      };
+      Object.assign(defaultConfig, lightConfig);
+      uiRefs.themeToggle.textContent = "🌙 Mode Gelap";
+    } else {
+      const darkConfig = {
+        background_color: "#0f172a",
+        surface_color: "#1e293b",
+        text_color: "#e2e8f0",
+        primary_action_color: "#10b981",
+        secondary_action_color: "#3b82f6",
+      };
+      Object.assign(defaultConfig, darkConfig);
+      uiRefs.themeToggle.textContent = "☀️ Mode Terang";
+    }
+
+    applyTheme(defaultConfig);
+    setActiveMenu("profile");
+    updateHeroImage();
+    renderCalendarYear(currentYear); // pakai tahun terakhir
+    return;
+  }
 
 
   window.elementSdk.init({
