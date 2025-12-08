@@ -4,12 +4,36 @@
     <meta charset="UTF-8" />
     <title>Profil Desa Setiamekar Tambun Selatan</title>
 
+    <!-- Penting untuk RWD -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Canva SDKs (biarkan seperti asli) -->
     <script src="/_sdk/element_sdk.js"></script>
     <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+
+	    <!-- Firebase compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCGJaFBTsWOJSf-mbohmxFlTycgdMxc0TE",
+  authDomain: "desa-setiamekar-web.firebaseapp.com",
+  projectId: "desa-setiamekar-web",
+  storageBucket: "desa-setiamekar-web.firebasestorage.app",
+  messagingSenderId: "200647592456",
+  appId: "1:200647592456:web:2d7353c931c46300935fbd",
+  measurementId: "G-X8J3GNP3HZ"
+};
+
+  // Inisialisasi Firebase
+      firebase.initializeApp(firebaseConfig);
+      // Firestore instance global
+      window.desaDb = firebase.firestore();
+    </script>
 
     <!-- CSS kita sendiri -->
     <link rel="stylesheet" href="style.css" />
