@@ -61,6 +61,10 @@ let aboutDescription =
 let activitiesDescription =
   "Berbagai kegiatan rutin seperti pengajian mingguan, kerja bakti bulanan, pelatihan UMKM, festival budaya, dan kegiatan pemuda diadakan untuk mempererat kebersamaan dan meningkatkan kesejahteraan warga.";
 
+// ===================== PERSISTENSI STATE (Firestore) =====================
+const COLLECTION_NAME = "desa_config";
+const DOCUMENT_ID = "global_state";
+
 const galleryItems = [
   { id: 1, imageUrl: "", caption: "Kerja bakti membersihkan lingkungan desa" },
   { id: 2, imageUrl: "", caption: "Pengajian rutin mingguan bersama warga" },
@@ -70,14 +74,23 @@ const galleryItems = [
   { id: 6, imageUrl: "", caption: "Kegiatan pemuda dan olahraga desa" },
 ];
 
-// ===================== PERSISTENSI STATE (localStorage) =====================
-const STORAGE_KEY = "desaSetiamekarStateV1";
-
-function loadState() {
+async function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const state = JSON.parse(raw);
+    if (!window.desaDb) {
+      console.warn("Firestore belum siap, gunakan state default.");
+      return;
+    }
+
+    const docRef = window.desaDb
+      .collection(COLLECTION_NAME)
+      .doc(DOCUMENT_ID);
+    const snap = await docRef.get();
+
+    if (!snap.exists) {
+      return;
+    }
+
+    const state = snap.data();
 
     if (typeof state.heroImageUrl === "string") {
       heroImageUrl = state.heroImageUrl;
@@ -89,7 +102,6 @@ function loadState() {
       activitiesDescription = state.activitiesDescription;
     }
 
-    // galleryItems: kita replace isi array
     if (Array.isArray(state.galleryItems) && state.galleryItems.length > 0) {
       galleryItems.length = 0;
       state.galleryItems.forEach((item) => {
@@ -103,7 +115,6 @@ function loadState() {
       });
     }
 
-    // calendarEvents: copy semua key
     if (state.calendarEvents && typeof state.calendarEvents === "object") {
       Object.keys(state.calendarEvents).forEach((k) => {
         calendarEvents[k] = Array.isArray(state.calendarEvents[k])
@@ -112,7 +123,6 @@ function loadState() {
       });
     }
 
-    // === TAMBAHAN: tema & tahun terakhir ===
     if (typeof state.isLightTheme === "boolean") {
       isLightTheme = state.isLightTheme;
     }
@@ -120,28 +130,36 @@ function loadState() {
       currentYear = state.currentYear;
     }
   } catch (err) {
-    console.error("Gagal load state:", err);
+    console.error("Gagal load state dari Firestore:", err);
   }
 }
 
-
-function saveState() {
+async function saveState() {
   try {
+    if (!window.desaDb) {
+      console.warn("Firestore belum siap, state tidak disimpan ke server.");
+      return;
+    }
+
     const state = {
       heroImageUrl,
       aboutDescription,
       activitiesDescription,
       galleryItems,
       calendarEvents,
-      isLightTheme,   // disimpan
-      currentYear,    // disimpan
+      isLightTheme,
+      currentYear,
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+    const docRef = window.desaDb
+      .collection(COLLECTION_NAME)
+      .doc(DOCUMENT_ID);
+
+    await docRef.set(state, { merge: true });
   } catch (err) {
-    console.error("Gagal save state:", err);
+    console.error("Gagal save state ke Firestore:", err);
   }
 }
-
 
 // ===================== UTIL SVG & PATTERN =====================
 function createModernIcon() {
@@ -450,8 +468,7 @@ function buildStaticLayout() {
   const heroDesc = document.createElement("p");
   heroDesc.className =
     "text-lg md:text-xl text-white/95 drop-shadow-md max-w-2xl mx-auto";
-  heroDesc.textContent =
-    "";
+  heroDesc.textContent = "";
 
   heroContent.appendChild(heroTitle);
   heroContent.appendChild(heroDesc);
@@ -625,15 +642,14 @@ function buildStaticLayout() {
   yearPrev.textContent = "← Tahun Lalu";
 
   const yearLabel = document.createElement("input");
-yearLabel.id = "calendar-year-label";
-yearLabel.type = "number";
-yearLabel.className =
-  "px-6 py-2 rounded-full font-bold shadow-lg text-base text-center";
-yearLabel.value = currentYear.toString();
-yearLabel.setAttribute("min", "1900");
-yearLabel.setAttribute("max", "3000");
-yearLabel.setAttribute("aria-label", "Pilih tahun kalender");
-
+  yearLabel.id = "calendar-year-label";
+  yearLabel.type = "number";
+  yearLabel.className =
+    "px-6 py-2 rounded-full font-bold shadow-lg text-base text-center";
+  yearLabel.value = currentYear.toString();
+  yearLabel.setAttribute("min", "1900");
+  yearLabel.setAttribute("max", "3000");
+  yearLabel.setAttribute("aria-label", "Pilih tahun kalender");
 
   const yearNext = document.createElement("button");
   yearNext.id = "calendar-next-year";
@@ -684,24 +700,20 @@ yearLabel.setAttribute("aria-label", "Pilih tahun kalender");
   footerText.textContent = defaultConfig.footer_text;
 
   const footerNote = document.createElement("p");
-footerNote.className = "text-xs opacity-70 text-center md:text-right";
+  footerNote.className = "text-xs opacity-70 text-center md:text-right";
 
-// buat link instagram
-const igLink = document.createElement("a");
-igLink.href = "https://www.instagram.com/kknfasilkom5/";
-igLink.target = "_blank";
-igLink.rel = "noopener noreferrer";
-igLink.className = "inline-flex items-center gap-2";
+  const igLink = document.createElement("a");
+  igLink.href = "https://www.instagram.com/kknfasilkom5/";
+  igLink.target = "_blank";
+  igLink.rel = "noopener noreferrer";
+  igLink.className = "inline-flex items-center gap-2";
+  igLink.innerHTML = "📷 <span>@kknfasilkom5</span>";
 
-// logo instagram + teks
-igLink.innerHTML = "📷 <span>@kknfasilkom5</span>";
+  footerNote.appendChild(igLink);
 
-footerNote.appendChild(igLink);
-
-footerInner.appendChild(footerText);
-footerInner.appendChild(footerNote);
-footer.appendChild(footerInner);
-
+  footerInner.appendChild(footerText);
+  footerInner.appendChild(footerNote);
+  footer.appendChild(footerInner);
 
   wrapper.appendChild(header);
   wrapper.appendChild(main);
@@ -938,11 +950,10 @@ function editGalleryItem(id) {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     item.imageUrl = urlInput.value.trim();
-item.caption = textarea.value.trim();
-host.remove();
-renderGallery();
-saveState();
-
+    item.caption = textarea.value.trim();
+    host.remove();
+    renderGallery();
+    saveState();
   });
 
   panel.appendChild(titleRow);
@@ -975,9 +986,8 @@ function deleteGalleryItem(id) {
   const index = galleryItems.findIndex((i) => i.id === id);
   if (index === -1) return;
   galleryItems.splice(index, 1);
-renderGallery();
-saveState();
-
+  renderGallery();
+  saveState();
 }
 
 function addNewGalleryItem() {
@@ -1050,13 +1060,12 @@ function addNewGalleryItem() {
     const caption = textarea.value.trim();
     const imageUrl = urlInput.value.trim();
     if (caption) {
-  const newId = Math.max(...galleryItems.map((i) => i.id), 0) + 1;
-  galleryItems.push({ id: newId, imageUrl, caption });
-  host.remove();
-  renderGallery();
-  saveState();
-}
-
+      const newId = Math.max(...galleryItems.map((i) => i.id), 0) + 1;
+      galleryItems.push({ id: newId, imageUrl, caption });
+      host.remove();
+      renderGallery();
+      saveState();
+    }
   });
 
   panel.appendChild(titleRow);
@@ -1145,13 +1154,12 @@ function editHeroImage() {
   form.appendChild(submit);
 
   form.addEventListener("submit", (e) => {
-  e.preventDefault();
-  heroImageUrl = urlInput.value.trim();
-  host.remove();
-  updateHeroImage();
-  saveState();
-});
-
+    e.preventDefault();
+    heroImageUrl = urlInput.value.trim();
+    host.remove();
+    updateHeroImage();
+    saveState();
+  });
 
   panel.appendChild(titleRow);
   panel.appendChild(form);
@@ -1264,10 +1272,9 @@ function editAboutDescription() {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     aboutDescription = textarea.value.trim();
-document.getElementById("about-body").textContent = aboutDescription;
-host.remove();
-saveState();
-
+    document.getElementById("about-body").textContent = aboutDescription;
+    host.remove();
+    saveState();
   });
 
   panel.appendChild(titleRow);
@@ -1348,11 +1355,10 @@ function editActivitiesDescription() {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     activitiesDescription = textarea.value.trim();
-document.getElementById("activities-body").textContent =
-  activitiesDescription;
-host.remove();
-saveState();
-
+    document.getElementById("activities-body").textContent =
+      activitiesDescription;
+    host.remove();
+    saveState();
   });
 
   panel.appendChild(titleRow);
@@ -1515,7 +1521,7 @@ function renderCalendarYear(year) {
     } else {
       uiRefs.calendarYearLabel.textContent = year.toString();
     }
-  } // ← tambahkan penutup if di sini
+  }
 
   for (let month = 0; month < 12; month++) {
     const monthCard = document.createElement("div");
@@ -1610,7 +1616,6 @@ function renderCalendarYear(year) {
   const configNow = window.elementSdk ? window.elementSdk.config : defaultConfig;
   applyCalendarTheme(configNow);
 }
-
 
 function applyCalendarTheme(config) {
   const surface = config.surface_color || defaultConfig.surface_color;
@@ -1764,10 +1769,9 @@ function onCalendarDateClick(year, month, day) {
         .map((l) => l.trim())
         .filter((l) => l.length > 0);
       setEventsForDate(year, month, day, lines);
-saveState();
-host.remove();
-renderCalendarYear(currentYear);
-
+      saveState();
+      host.remove();
+      renderCalendarYear(currentYear);
     });
 
     panel.appendChild(form);
@@ -1942,33 +1946,32 @@ function showPasswordPrompt(callback) {
 // ===================== INTERAKSI GLOBAL =====================
 function setupInteractions() {
   uiRefs.themeToggle.addEventListener("click", () => {
-  isLightTheme = !isLightTheme;
-  if (isLightTheme) {
-    const lightConfig = {
-      background_color: "#f0f4f8",
-      surface_color: "#ffffff",
-      text_color: "#1e293b",
-      primary_action_color: "#10b981",
-      secondary_action_color: "#3b82f6",
-    };
-    Object.assign(defaultConfig, lightConfig);
-    uiRefs.themeToggle.textContent = "🌙 Mode Gelap";
-  } else {
-    const darkConfig = {
-      background_color: "#0f172a",
-      surface_color: "#1e293b",
-      text_color: "#e2e8f0",
-      primary_action_color: "#10b981",
-      secondary_action_color: "#3b82f6",
-    };
-    Object.assign(defaultConfig, darkConfig);
-    uiRefs.themeToggle.textContent = "☀️ Mode Terang";
-  }
-  applyTheme(defaultConfig);
-  renderCalendarYear(currentYear);
-  saveState(); // <-- simpan pilihan tema & tahun
-});
-
+    isLightTheme = !isLightTheme;
+    if (isLightTheme) {
+      const lightConfig = {
+        background_color: "#f0f4f8",
+        surface_color: "#ffffff",
+        text_color: "#1e293b",
+        primary_action_color: "#10b981",
+        secondary_action_color: "#3b82f6",
+      };
+      Object.assign(defaultConfig, lightConfig);
+      uiRefs.themeToggle.textContent = "🌙 Mode Gelap";
+    } else {
+      const darkConfig = {
+        background_color: "#0f172a",
+        surface_color: "#1e293b",
+        text_color: "#e2e8f0",
+        primary_action_color: "#10b981",
+        secondary_action_color: "#3b82f6",
+      };
+      Object.assign(defaultConfig, darkConfig);
+      uiRefs.themeToggle.textContent = "☀️ Mode Terang";
+    }
+    applyTheme(defaultConfig);
+    renderCalendarYear(currentYear);
+    saveState();
+  });
 
   uiRefs.profileNavBtn.addEventListener("click", () =>
     setActiveMenu("profile")
@@ -2052,10 +2055,10 @@ function setupInteractions() {
   });
 
   uiRefs.calendarPrevYearBtn.addEventListener("click", () => {
-  currentYear -= 1;
-  renderCalendarYear(currentYear);
-  saveState(); // simpan tahun terakhir
-});
+    currentYear -= 1;
+    renderCalendarYear(currentYear);
+    saveState();
+  });
 
   uiRefs.calendarNextYearBtn.addEventListener("click", () => {
     currentYear += 1;
@@ -2074,7 +2077,6 @@ function setupInteractions() {
         renderCalendarYear(currentYear);
         saveState();
       } else {
-        // kalau tidak valid, balikin ke tahun saat ini
         yearInput.value = currentYear.toString();
       }
     };
@@ -2090,11 +2092,10 @@ function setupInteractions() {
   }
 }
 
-
 // ===================== INIT DARI CANVA / STANDALONE =====================
-function initElementSdk() {
-  // load state dari localStorage dulu
-  loadState();
+async function initElementSdk() {
+  // load state dari Firestore dulu
+  await loadState();
 
   if (!window.elementSdk) {
     // jalan sebagai halaman biasa (tanpa Canva)
@@ -2126,10 +2127,9 @@ function initElementSdk() {
     applyTheme(defaultConfig);
     setActiveMenu("profile");
     updateHeroImage();
-    renderCalendarYear(currentYear); // pakai tahun terakhir
+    renderCalendarYear(currentYear);
     return;
   }
-
 
   window.elementSdk.init({
     defaultConfig,
@@ -2257,6 +2257,8 @@ function initElementSdk() {
   buildStaticLayout();
   applyTheme(window.elementSdk.config || defaultConfig);
   setActiveMenu("profile");
+  updateHeroImage();
+  renderCalendarYear(currentYear);
 }
 
 // panggil init
