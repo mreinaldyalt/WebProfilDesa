@@ -8,12 +8,12 @@ const defaultConfig = {
   font_family: "Inter",
   font_size: 16,
 
-  header_title: "Perumahan Setiamekar Tambun Selatan",
+  header_title: "Perumahan Taman Kebayoran Tambun Selatan",
   header_subtitle:
-    "Perumahan Setiamekar RW 13 , Kec. Tambun Selatan, Kab. Bekasi",
+    "Perumahan Taman Kebayoran RW 13 , Kec. Tambun Selatan, Kab. Bekasi",
   about_title: "Tentang Perumahan Kami",
   about_body:
-    "Perumahan Setiamekar Tambun Selatan adalah Perumahan yang terletak di wilayah strategis dengan akses mudah namun tetap mempertahankan suasana pedesaan yang asri. Masyarakat kami menjunjung tinggi nilai-nilai gotong royong, kearifan lokal, dan keagamaan yang kuat.",
+    "Perumahan Taman Kebayoran Tambun Selatan adalah Perumahan yang terletak di wilayah strategis dengan akses mudah namun tetap mempertahankan suasana pedesaan yang asri. Masyarakat kami menjunjung tinggi nilai-nilai gotong royong, kearifan lokal, dan keagamaan yang kuat.",
   activities_title: "Kegiatan Rutin Perumahan",
   activities_body:
     "Berbagai kegiatan rutin seperti pengajian mingguan, kerja bakti bulanan, pelatihan UMKM, festival budaya, dan kegiatan pemuda diadakan untuk mempererat kebersamaan dan meningkatkan kesejahteraan warga.",
@@ -22,7 +22,7 @@ const defaultConfig = {
   calendar_intro_text:
     "Lihat dan kelola jadwal kegiatan Perumahan sepanjang tahun. Perangkat Perumahan dapat masuk mode edit dengan kata sandi khusus.",
   footer_text:
-    "Perumahan Setiamekar Tambun Selatan • Bersama Membangun Perumahan yang Lebih Baik",
+    "Perumahan Taman Kebayoran Tambun Selatan • Bersama Membangun Perumahan yang Lebih Baik",
 };
 
 const uiRefs = {
@@ -57,7 +57,7 @@ let isLightTheme = false;
 
 let heroImageUrl = "";
 let aboutDescription =
-  "Perumahan Setiamekar Tambun Selatan adalah Perumahan yang terletak di wilayah strategis dengan akses mudah namun tetap mempertahankan suasana pedesaan yang asri. Masyarakat kami menjunjung tinggi nilai-nilai gotong royong, kearifan lokal, dan keagamaan yang kuat.";
+  "Perumahan Taman Kebayoran Tambun Selatan adalah Perumahan yang terletak di wilayah strategis dengan akses mudah namun tetap mempertahankan suasana pedesaan yang asri. Masyarakat kami menjunjung tinggi nilai-nilai gotong royong, kearifan lokal, dan keagamaan yang kuat.";
 let activitiesDescription =
   "Berbagai kegiatan rutin seperti pengajian mingguan, kerja bakti bulanan, pelatihan UMKM, festival budaya, dan kegiatan pemuda diadakan untuk mempererat kebersamaan dan meningkatkan kesejahteraan warga.";
 
