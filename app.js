@@ -51,22 +51,58 @@ const uiRefs = {
   calendarNextYearBtn: null,
 
   // 🔽 tambahan untuk mobile menu
-  mobileNavFab: null,
+    mobileNavFab: null,
   mobileNavOverlay: null,
   mobileNavPanel: null,
   mobileNavThreshold: 0,
   mobileProfileLink: null,
   mobileCalendarLink: null,
+  mobileEditLink: null, // 🔽 tombol "Mode Edit" di menu melayang HP
 };
 
 let currentYear = new Date().getFullYear();
-const calendarEvents = {};
 const EDIT_PASSWORD = "kknubhara";
 let hasEditAccess = false;
 let hasGalleryEditAccess = false;
 let isLightTheme = false;
 
+// 🔽 track menu aktif sekarang
+let currentActiveMenu = "profile";
+
+
+// ===================== CLOUDINARY CONFIG =====================
+// ganti value cloud_name & upload_preset sesuai akun Cloudinary lu
+const CLOUDINARY_CLOUD_NAME = "dycgyzhc0";
+const CLOUDINARY_UPLOAD_PRESET = "desa_unsigned";
+
+// ===================== CLOUDINARY UPLOAD HELPER =====================
+async function uploadImageToCloudinary(file) {
+  if (!file) return null;
+
+  const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+  const res = await fetch(url, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    console.error("Cloudinary upload error:", await res.text());
+    throw new Error("Upload ke Cloudinary gagal");
+  }
+
+  const data = await res.json();
+  return data.secure_url;
+}
+
 let heroImageUrl = "";
+
+// 🔽 URL logo utama (kalau kosong pakai icon default)
+let logoImageUrl = "";
+
 let aboutDescription =
   "Perumahan Taman Kebayoran Tambun Selatan adalah Perumahan yang terletak di wilayah strategis dengan akses mudah namun tetap mempertahankan suasana pedesaan yang asri. Masyarakat kami menjunjung tinggi nilai-nilai gotong royong, kearifan lokal, dan keagamaan yang kuat.";
 let activitiesDescription =
@@ -124,6 +160,7 @@ const galleryItems = [
     caption: "Kegiatan pemuda dan olahraga Perumahan",
   },
 ];
+let calendarEvents = {};
 
 async function loadState() {
   try {
@@ -143,9 +180,15 @@ async function loadState() {
 
     const state = snap.data();
 
-    if (typeof state.heroImageUrl === "string") {
+        if (typeof state.heroImageUrl === "string") {
       heroImageUrl = state.heroImageUrl;
     }
+
+    // 🔽 logo
+    if (typeof state.logoImageUrl === "string") {
+      logoImageUrl = state.logoImageUrl;
+    }
+
     if (typeof state.aboutDescription === "string") {
       aboutDescription = state.aboutDescription;
     }
@@ -246,9 +289,10 @@ async function saveState() {
         cleanCalendarEvents[k] = arr;
       }
     });
-
-        const state = {
+            const state = {
       heroImageUrl,
+      // 🔽 simpan logo juga
+      logoImageUrl,
       aboutDescription,
       activitiesDescription,
       galleryItems,
@@ -462,10 +506,30 @@ navInner.className =
   const brandWrap = document.createElement("div");
   brandWrap.className = "flex items-center gap-4";
 
-  const iconWrap = document.createElement("div");
+    const iconWrap = document.createElement("div");
   iconWrap.className =
-    "rounded-full p-3 bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center shadow-lg float-animation";
-  iconWrap.appendChild(createModernIcon());
+    "rounded-full p-1 bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center shadow-lg float-animation relative overflow-hidden";
+
+  // 🔽 IMG LOGO (kalau user upload)
+  const logoImg = document.createElement("img");
+  logoImg.id = "desa-logo-img";
+  logoImg.className =
+    "w-10 h-10 md:w-12 md:h-12 rounded-full object-cover hidden";
+  logoImg.alt = "Logo Perumahan";
+  iconWrap.appendChild(logoImg);
+
+  // 🔽 ICON DEFAULT (kalau belum ada logo)
+  const defaultIcon = createModernIcon();
+  defaultIcon.id = "desa-logo-default";
+  iconWrap.appendChild(defaultIcon);
+
+  // 🔽 klik bulatan ini untuk ganti logo (hanya saat mode edit)
+  iconWrap.style.cursor = "pointer";
+  iconWrap.addEventListener("click", () => {
+    if (hasGalleryEditAccess) {
+      editLogoImage();
+    }
+  });
 
   const brandText = document.createElement("div");
   brandText.className = "flex flex-col";
@@ -916,7 +980,7 @@ heroImageContainer.style.height = heroHeight;
   mobileNavHeader.appendChild(mobileNavTitle);
   mobileNavPanel.appendChild(mobileNavHeader);
 
-  const mobileNavList = document.createElement("div");
+    const mobileNavList = document.createElement("div");
   mobileNavList.className = "flex flex-col py-2";
 
   const mobileProfileBtn = document.createElement("button");
@@ -931,8 +995,16 @@ heroImageContainer.style.height = heroHeight;
     "w-full text-left px-5 py-3 text-sm font-medium text-white hover:bg-white/10 transition-colors";
   mobileCalendarBtn.textContent = "📅 Kalender Kegiatan";
 
+  // 🔽 tombol baru: Mode Edit (galeri & dokumentasi)
+  const mobileEditBtn = document.createElement("button");
+  mobileEditBtn.type = "button";
+  mobileEditBtn.className =
+    "w-full text-left px-5 py-3 text-sm font-medium text-white hover:bg-white/10 transition-colors";
+  mobileEditBtn.textContent = "🔒 Mode Edit";
+
   mobileNavList.appendChild(mobileProfileBtn);
   mobileNavList.appendChild(mobileCalendarBtn);
+  mobileNavList.appendChild(mobileEditBtn); // 🔽 tambahin di list
   mobileNavPanel.appendChild(mobileNavList);
   mobileNavOverlay.appendChild(mobileNavPanel);
   wrapper.appendChild(mobileNavOverlay);
@@ -951,10 +1023,15 @@ heroImageContainer.style.height = heroHeight;
   root.appendChild(wrapper);
 
   // simpan referensi
-  uiRefs.root = root;
+    uiRefs.root = root;
   uiRefs.mainWrapper = wrapper;
   uiRefs.headerTitle = titleEl;
   uiRefs.headerSubtitle = subtitleEl;
+
+  // 🔽 referensi logo
+  uiRefs.logoImg = logoImg;
+  uiRefs.logoDefaultIcon = defaultIcon;
+
   uiRefs.aboutTitle = aboutTitle;
   uiRefs.aboutBody = aboutBody;
   uiRefs.activitiesTitle = activitiesTitle;
@@ -979,12 +1056,13 @@ heroImageContainer.style.height = heroHeight;
   uiRefs.deleteSectionBtn = deleteSectionBtn;
 
   // 🔽 referensi mobile nav
-  uiRefs.mobileNavFab = mobileNavFab;
+    uiRefs.mobileNavFab = mobileNavFab;
   uiRefs.mobileNavOverlay = mobileNavOverlay;
   uiRefs.mobileNavPanel = mobileNavPanel;
   uiRefs.mobileNavThreshold = header.offsetHeight || 240; // titik scroll kira-kira
   uiRefs.mobileProfileLink = mobileProfileBtn;
   uiRefs.mobileCalendarLink = mobileCalendarBtn;
+  uiRefs.mobileEditLink = mobileEditBtn; // 🔽 simpan referensi tombol Mode Edit
 
     setupInteractions();
   setupScrollAnimations();
@@ -1179,32 +1257,45 @@ function editGalleryItem(id) {
   titleRow.appendChild(close);
 
   const form = document.createElement("form");
-  form.className = "flex flex-col gap-3";
+  form.className = "flex flex-col gap-4";
 
+  // === URL FOTO ===
   const urlLabel = document.createElement("label");
-  urlLabel.setAttribute("for", "gallery-url-input");
   urlLabel.className = "text-sm font-semibold";
-  urlLabel.textContent = "URL Foto (https://)";
+  urlLabel.textContent = "URL Foto (opsional)";
 
   const urlInput = document.createElement("input");
-  urlInput.id = "gallery-url-input";
   urlInput.type = "text";
-  urlInput.className =
-    "w-full px-4 py-3 rounded-xl text-sm border-2 bg-transparent";
   urlInput.placeholder = "https://example.com/image.jpg";
   urlInput.value = item.imageUrl || "";
+  urlInput.className =
+    "w-full px-4 py-3 rounded-xl text-sm border-2 bg-transparent";
 
+  // === FILE BARU ===
+  const fileLabel = document.createElement("label");
+  fileLabel.className = "text-sm font-semibold";
+  fileLabel.textContent = "Upload Foto Baru (opsional)";
+
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = "image/*";
+  fileInput.className =
+    "w-full px-4 py-3 rounded-xl text-sm border-2 bg-transparent";
+
+  // === CAPTION ===
   const label = document.createElement("label");
-  label.setAttribute("for", "gallery-caption-input");
   label.className = "text-sm font-semibold";
   label.textContent = "Keterangan Foto";
 
   const textarea = document.createElement("textarea");
-  textarea.id = "gallery-caption-input";
+  textarea.rows = 3;
+  textarea.value = item.caption || "";
   textarea.className =
     "w-full px-4 py-3 rounded-xl text-sm border-2 bg-transparent";
-  textarea.rows = 3;
-  textarea.value = item.caption;
+
+  const status = document.createElement("p");
+  status.className = "text-xs opacity-70 hidden";
+  status.textContent = "Mengupload foto baru...";
 
   const submit = document.createElement("button");
   submit.type = "submit";
@@ -1214,17 +1305,40 @@ function editGalleryItem(id) {
 
   form.appendChild(urlLabel);
   form.appendChild(urlInput);
+  form.appendChild(fileLabel);
+  form.appendChild(fileInput);
   form.appendChild(label);
   form.appendChild(textarea);
+  form.appendChild(status);
   form.appendChild(submit);
 
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    item.imageUrl = urlInput.value.trim();
-    item.caption = textarea.value.trim();
-    host.remove();
-    renderGallery();
-    saveState();
+
+    let finalUrl = urlInput.value.trim();
+    const file = fileInput.files[0];
+
+    try {
+      submit.disabled = true;
+
+      if (file) {
+        status.classList.remove("hidden");
+        finalUrl = await uploadImageToCloudinary(file);
+        status.classList.add("hidden");
+      }
+
+      item.imageUrl = finalUrl;
+      item.caption = textarea.value.trim();
+
+      await saveState();
+      host.remove();
+      renderGallery();
+    } catch (err) {
+      console.error(err);
+      alert("Gagal menyimpan perubahan.");
+      submit.disabled = false;
+      status.classList.add("hidden");
+    }
   });
 
   panel.appendChild(titleRow);
@@ -1245,6 +1359,8 @@ function editGalleryItem(id) {
   close.style.color =
     cfg.secondary_action_color || defaultConfig.secondary_action_color;
   urlInput.style.borderColor =
+    cfg.primary_action_color || defaultConfig.primary_action_color;
+  fileInput.style.borderColor =
     cfg.primary_action_color || defaultConfig.primary_action_color;
   textarea.style.borderColor =
     cfg.primary_action_color || defaultConfig.primary_action_color;
@@ -1364,31 +1480,44 @@ function addNewGalleryItem() {
   titleRow.appendChild(close);
 
   const form = document.createElement("form");
-  form.className = "flex flex-col gap-3";
+  form.className = "flex flex-col gap-4";
 
+  // === URL FOTO (opsional) ===
   const urlLabel = document.createElement("label");
-  urlLabel.setAttribute("for", "new-gallery-url");
   urlLabel.className = "text-sm font-semibold";
-  urlLabel.textContent = "URL Foto (https://)";
+  urlLabel.textContent = "URL Foto (opsional)";
 
   const urlInput = document.createElement("input");
-  urlInput.id = "new-gallery-url";
   urlInput.type = "text";
+  urlInput.placeholder = "https://example.com/image.jpg";
   urlInput.className =
     "w-full px-4 py-3 rounded-xl text-sm border-2 bg-transparent";
-  urlInput.placeholder = "https://example.com/image.jpg";
 
-  const label = document.createElement("label");
-  label.setAttribute("for", "new-gallery-caption");
-  label.className = "text-sm font-semibold";
-  label.textContent = "Keterangan Foto";
+  // === FILE UPLOAD (opsional) ===
+  const fileLabel = document.createElement("label");
+  fileLabel.className = "text-sm font-semibold";
+  fileLabel.textContent = "Upload Foto dari HP/Laptop (opsional)";
+
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = "image/*";
+  fileInput.className =
+    "w-full px-4 py-3 rounded-xl text-sm border-2 bg-transparent";
+
+  // === CAPTION ===
+  const captionLabel = document.createElement("label");
+  captionLabel.className = "text-sm font-semibold";
+  captionLabel.textContent = "Keterangan Foto";
 
   const textarea = document.createElement("textarea");
-  textarea.id = "new-gallery-caption";
-  textarea.className =
-    "w-full px-4 py-3 rounded-xl text-sm border-2 bg-transparent";
   textarea.rows = 3;
   textarea.placeholder = "Masukkan keterangan foto...";
+  textarea.className =
+    "w-full px-4 py-3 rounded-xl text-sm border-2 bg-transparent";
+
+  const status = document.createElement("p");
+  status.className = "text-xs opacity-70 hidden";
+  status.textContent = "Mengupload foto, mohon tunggu...";
 
   const submit = document.createElement("button");
   submit.type = "submit";
@@ -1398,37 +1527,54 @@ function addNewGalleryItem() {
 
   form.appendChild(urlLabel);
   form.appendChild(urlInput);
-  form.appendChild(label);
+  form.appendChild(fileLabel);
+  form.appendChild(fileInput);
+  form.appendChild(captionLabel);
   form.appendChild(textarea);
+  form.appendChild(status);
   form.appendChild(submit);
 
-    form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const caption = textarea.value.trim();
-    const imageUrl = urlInput.value.trim();
 
-    // Minimal salah satu terisi: URL foto atau keterangan
-    if (!caption && !imageUrl) {
-      alert("Isi URL foto atau keterangan dulu salah satu ya 🙂");
+    let imageUrl = urlInput.value.trim();
+    const caption = textarea.value.trim();
+    const file = fileInput.files[0];
+
+    if (!file && !imageUrl) {
+      alert("Isi URL foto atau upload file salah satu ya 🙂");
       return;
     }
 
-    const newId = Math.max(...galleryItems.map((i) => i.id), 0) + 1;
+    try {
+      submit.disabled = true;
 
-    // 🔽 tentukan section yang dipakai (section aktif)
-    const currentSectionId =
-      activeSectionId || (docSections[0] && docSections[0].id) || 1;
+      if (file) {
+        status.classList.remove("hidden");
+        imageUrl = await uploadImageToCloudinary(file);
+        status.classList.add("hidden");
+      }
 
-    galleryItems.push({
-      id: newId,
-      sectionId: currentSectionId,
-      imageUrl,
-      caption,
-    });
+      const newId = Math.max(...galleryItems.map((i) => i.id), 0) + 1;
+      const currentSectionId =
+        activeSectionId || (docSections[0] && docSections[0].id) || 1;
 
-    host.remove();
-    renderGallery();
-    saveState();
+      galleryItems.push({
+        id: newId,
+        sectionId: currentSectionId,
+        imageUrl,
+        caption,
+      });
+
+      await saveState();
+      host.remove();
+      renderGallery();
+    } catch (err) {
+      console.error(err);
+      alert("Gagal menambahkan foto. Coba lagi ya.");
+      submit.disabled = false;
+      status.classList.add("hidden");
+    }
   });
 
   panel.appendChild(titleRow);
@@ -1449,6 +1595,8 @@ function addNewGalleryItem() {
   close.style.color =
     cfg.secondary_action_color || defaultConfig.secondary_action_color;
   urlInput.style.borderColor =
+    cfg.primary_action_color || defaultConfig.primary_action_color;
+  fileInput.style.borderColor =
     cfg.primary_action_color || defaultConfig.primary_action_color;
   textarea.style.borderColor =
     cfg.primary_action_color || defaultConfig.primary_action_color;
@@ -1546,6 +1694,155 @@ function editHeroImage() {
   submit.style.backgroundColor =
     cfg.primary_action_color || defaultConfig.primary_action_color;
   submit.style.color = cfg.background_color || defaultConfig.background_color;
+}
+
+function editLogoImage() {
+  const host = document.createElement("div");
+  host.className =
+    "fixed inset-0 flex items-center justify-center bg-black/70 z-40 backdrop-blur-sm";
+
+  const panel = document.createElement("div");
+  panel.className =
+    "w-[90%] md:w-[420px] rounded-3xl p-6 shadow-2xl flex flex-col gap-4";
+
+  const titleRow = document.createElement("div");
+  titleRow.className = "flex items-center justify-between gap-3";
+
+  const title = document.createElement("h2");
+  title.className = "text-lg font-bold";
+  title.textContent = "🪪 Ganti Logo Perumahan";
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className =
+    "focus-outline px-4 py-2 rounded-full font-medium shadow-md text-sm";
+  close.textContent = "Tutup";
+  close.addEventListener("click", () => host.remove());
+
+  titleRow.appendChild(title);
+  titleRow.appendChild(close);
+
+  const form = document.createElement("form");
+  form.className = "flex flex-col gap-3";
+
+  // URL
+  const urlLabel = document.createElement("label");
+  urlLabel.className = "text-sm font-semibold";
+  urlLabel.textContent = "URL Logo (https://)";
+
+  const urlInput = document.createElement("input");
+  urlInput.type = "text";
+  urlInput.className =
+    "w-full px-4 py-3 rounded-xl text-sm border-2 bg-transparent";
+  urlInput.placeholder = "https://example.com/logo.png";
+  urlInput.value = logoImageUrl || "";
+
+  // FILE
+  const fileLabel = document.createElement("label");
+  fileLabel.className = "text-sm font-semibold";
+  fileLabel.textContent = "Upload Logo dari HP/Laptop (opsional)";
+
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = "image/*";
+  fileInput.className =
+    "w-full px-4 py-3 rounded-xl text-sm border-2 bg-transparent";
+
+  const info = document.createElement("p");
+  info.className = "text-xs opacity-70";
+  info.textContent =
+    "Pilih salah satu: isi URL atau upload file. Logo utama sebaiknya selalu terisi.";
+
+  const status = document.createElement("p");
+  status.className = "text-xs opacity-70 hidden";
+  status.textContent = "Mengupload logo, mohon tunggu...";
+
+  const submit = document.createElement("button");
+  submit.type = "submit";
+  submit.className =
+    "focus-outline px-5 py-3 rounded-full font-semibold shadow-lg transition-all hover:scale-105 text-sm";
+  submit.textContent = "💾 Simpan Logo";
+
+  form.appendChild(urlLabel);
+  form.appendChild(urlInput);
+  form.appendChild(fileLabel);
+  form.appendChild(fileInput);
+  form.appendChild(info);
+  form.appendChild(status);
+  form.appendChild(submit);
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    let finalUrl = urlInput.value.trim();
+    const file = fileInput.files[0];
+
+    if (!file && !finalUrl) {
+      alert("Isi URL logo atau upload file salah satu ya 🙂");
+      return;
+    }
+
+    try {
+      submit.disabled = true;
+
+      if (file) {
+        status.classList.remove("hidden");
+        finalUrl = await uploadImageToCloudinary(file);
+        status.classList.add("hidden");
+      }
+
+      logoImageUrl = finalUrl;
+      updateLogoImage();
+      await saveState();
+      host.remove();
+    } catch (err) {
+      console.error(err);
+      alert("Gagal menyimpan logo. Coba lagi ya.");
+      submit.disabled = false;
+      status.classList.add("hidden");
+    }
+  });
+
+  panel.appendChild(titleRow);
+  panel.appendChild(form);
+  host.appendChild(panel);
+  document.body.appendChild(host);
+
+  host.addEventListener("click", (e) => {
+    if (e.target === host) host.remove();
+  });
+
+  const cfg = window.elementSdk ? window.elementSdk.config : defaultConfig;
+  const surface = cfg.surface_color || defaultConfig.surface_color;
+  const textColor = cfg.text_color || defaultConfig.text_color;
+  const primary =
+    cfg.primary_action_color || defaultConfig.primary_action_color;
+  const secondary =
+    cfg.secondary_action_color || defaultConfig.secondary_action_color;
+
+  panel.style.backgroundColor = surface;
+  panel.style.color = textColor;
+  close.style.backgroundColor = "transparent";
+  close.style.borderColor = secondary;
+  close.style.color = secondary;
+  urlInput.style.borderColor = primary;
+  fileInput.style.borderColor = primary;
+  submit.style.backgroundColor = primary;
+  submit.style.color = surface;
+}
+
+
+function updateLogoImage() {
+  if (!uiRefs.logoImg || !uiRefs.logoDefaultIcon) return;
+
+  if (logoImageUrl) {
+    uiRefs.logoImg.src = logoImageUrl;
+    uiRefs.logoImg.classList.remove("hidden");
+    uiRefs.logoDefaultIcon.style.display = "none";
+  } else {
+    uiRefs.logoImg.classList.add("hidden");
+    uiRefs.logoDefaultIcon.style.display = "";
+  }
 }
 
 function updateHeroImage() {
@@ -1794,12 +2091,11 @@ function applyTheme(config) {
   uiRefs.themeToggle.style.backgroundColor = primary;
   uiRefs.themeToggle.style.color = bg;
 
-  uiRefs.profileNavBtn.style.backgroundColor = primary;
-  uiRefs.profileNavBtn.style.color = bg;
+    // 🔽 styling dasar tombol nav dikendalikan helper updateActiveNavStyles
+  if (typeof updateActiveNavStyles === "function") {
+    updateActiveNavStyles(currentActiveMenu || "profile");
+  }
 
-  uiRefs.calendarNavBtn.style.backgroundColor = "transparent";
-  uiRefs.calendarNavBtn.style.borderColor = secondary;
-  uiRefs.calendarNavBtn.style.color = secondary;
 
   const editBtn = document.getElementById("calendar-edit-toggle");
   if (editBtn) {
@@ -1823,20 +2119,60 @@ function applyTheme(config) {
   }
 }
 
+function updateActiveNavStyles(activeMenu) {
+  if (!uiRefs.profileNavBtn || !uiRefs.calendarNavBtn) return;
+
+  const cfg = window.elementSdk
+    ? (window.elementSdk.config || defaultConfig)
+    : defaultConfig;
+
+  const bg =
+    cfg.background_color || defaultConfig.background_color;
+  const primary =
+    cfg.primary_action_color || defaultConfig.primary_action_color;
+  const secondary =
+    cfg.secondary_action_color || defaultConfig.secondary_action_color;
+
+  const setActive = (btn) => {
+    btn.style.backgroundColor = primary;
+    btn.style.color = bg;
+    btn.style.borderColor = primary;
+    btn.style.fontWeight = "700";
+  };
+
+  const setInactive = (btn) => {
+    btn.style.backgroundColor = "transparent";
+    btn.style.color = secondary;
+    btn.style.borderColor = secondary;
+    btn.style.fontWeight = "500";
+  };
+
+  if (activeMenu === "calendar") {
+    setInactive(uiRefs.profileNavBtn);
+    setActive(uiRefs.calendarNavBtn);
+  } else {
+    // default: profile
+    setActive(uiRefs.profileNavBtn);
+    setInactive(uiRefs.calendarNavBtn);
+  }
+}
+
 function setActiveMenu(menu) {
   const profileSection = document.getElementById("section-profile");
   const calendarSection = document.getElementById("section-calendar");
 
-  if (menu === "profile") {
+  currentActiveMenu = menu === "calendar" ? "calendar" : "profile";
+
+  if (currentActiveMenu === "profile") {
     profileSection.classList.remove("hidden");
     calendarSection.classList.add("hidden");
-    uiRefs.profileNavBtn.style.fontWeight = "700";
-    uiRefs.calendarNavBtn.style.fontWeight = "500";
   } else {
     profileSection.classList.add("hidden");
     calendarSection.classList.remove("hidden");
-    uiRefs.profileNavBtn.style.fontWeight = "500";
-    uiRefs.calendarNavBtn.style.fontWeight = "700";
+  }
+
+  if (typeof updateActiveNavStyles === "function") {
+    updateActiveNavStyles(currentActiveMenu);
   }
 }
 
@@ -2383,52 +2719,64 @@ function setupInteractions() {
     setActiveMenu("calendar")
   );
 
-    const editGalleryBtn = document.getElementById("edit-gallery-toggle");
-  editGalleryBtn.addEventListener("click", () => {
+      const editGalleryBtn = document.getElementById("edit-gallery-toggle");
+  const mobileEditBtn = uiRefs.mobileEditLink;
+
+  // 🔽 helper untuk update teks di kedua tombol
+  function updateEditButtonsLabel() {
+    const label = hasGalleryEditAccess ? "🔓 Mode Edit" : "🔒 Mode Edit";
+    if (editGalleryBtn) editGalleryBtn.textContent = label;
+    if (mobileEditBtn) mobileEditBtn.textContent = label;
+  }
+
+  // 🔽 fungsi utama toggle mode edit (dipakai desktop & mobile)
+  function toggleGalleryEditMode() {
     if (!hasGalleryEditAccess) {
+      // mau masuk mode edit → minta password dulu
       showPasswordPrompt((success) => {
-        if (success) {
-          hasGalleryEditAccess = true;
-          editGalleryBtn.textContent = "🔓 Mode Edit";
+        if (!success) return;
 
-          const heroContainer = document.getElementById("hero-image-container");
-          if (heroContainer) {
-            let heroEditBtn = heroContainer.querySelector("#edit-hero-btn");
-            if (!heroEditBtn) {
-              heroEditBtn = document.createElement("button");
-              heroEditBtn.id = "edit-hero-btn";
-              heroEditBtn.type = "button";
-              heroEditBtn.className =
-                "absolute top-4 right-4 z-20 focus-outline px-4 py-2 rounded-full text-sm font-semibold bg-blue-500 text-white shadow-lg hover:scale-105 transition-all";
-              heroEditBtn.textContent = "🖼️ Edit Foto";
-              heroEditBtn.addEventListener("click", editHeroImage);
-              heroContainer.appendChild(heroEditBtn);
-            } else {
-              heroEditBtn.classList.remove("hidden");
-            }
-          }
+        hasGalleryEditAccess = true;
+        updateEditButtonsLabel();
 
-          const aboutEditBtn = document.getElementById("edit-about-btn");
-          if (aboutEditBtn) {
-            aboutEditBtn.classList.remove("hidden");
-            aboutEditBtn.addEventListener("click", editAboutDescription);
+        const heroContainer = document.getElementById("hero-image-container");
+        if (heroContainer) {
+          let heroEditBtn = heroContainer.querySelector("#edit-hero-btn");
+          if (!heroEditBtn) {
+            heroEditBtn = document.createElement("button");
+            heroEditBtn.id = "edit-hero-btn";
+            heroEditBtn.type = "button";
+            heroEditBtn.className =
+              "absolute top-4 right-4 z-20 focus-outline px-4 py-2 rounded-full text-sm font-semibold bg-blue-500 text-white shadow-lg hover:scale-105 transition-all";
+            heroEditBtn.textContent = "🖼️ Edit Foto";
+            heroEditBtn.addEventListener("click", editHeroImage);
+            heroContainer.appendChild(heroEditBtn);
+          } else {
+            heroEditBtn.classList.remove("hidden");
           }
+        }
 
-          const actEditBtn = document.getElementById("edit-activities-btn");
-          if (actEditBtn) {
-            actEditBtn.classList.remove("hidden");
-            actEditBtn.addEventListener("click", editActivitiesDescription);
-          }
+        const aboutEditBtn = document.getElementById("edit-about-btn");
+        if (aboutEditBtn) {
+          aboutEditBtn.classList.remove("hidden");
+          aboutEditBtn.addEventListener("click", editAboutDescription);
+        }
 
-          renderGallery();
-          if (typeof onGalleryEditModeChange === "function") {
-            onGalleryEditModeChange(true);
-          }
+        const actEditBtn = document.getElementById("edit-activities-btn");
+        if (actEditBtn) {
+          actEditBtn.classList.remove("hidden");
+          actEditBtn.addEventListener("click", editActivitiesDescription);
+        }
+
+        renderGallery();
+        if (typeof onGalleryEditModeChange === "function") {
+          onGalleryEditModeChange(true);
         }
       });
     } else {
+      // matikan mode edit
       hasGalleryEditAccess = false;
-      editGalleryBtn.textContent = "🔒 Mode Edit";
+      updateEditButtonsLabel();
 
       const heroEditBtn = document.getElementById("edit-hero-btn");
       if (heroEditBtn) heroEditBtn.classList.add("hidden");
@@ -2444,8 +2792,19 @@ function setupInteractions() {
         onGalleryEditModeChange(false);
       }
     }
-  });
+  }
 
+  if (editGalleryBtn) {
+    editGalleryBtn.addEventListener("click", toggleGalleryEditMode);
+  }
+
+  // 🔽 tombol Mode Edit di menu HP
+  if (mobileEditBtn) {
+    mobileEditBtn.addEventListener("click", () => {
+      toggleGalleryEditMode();
+      closeMobileNav(); // biar panel geser nutup setelah dipencet
+    });
+  }
 
   const editToggleBtn = document.getElementById("calendar-edit-toggle");
   editToggleBtn.addEventListener("click", () => {
@@ -2611,11 +2970,13 @@ async function initElementSdk() {
       uiRefs.themeToggle.textContent = "☀️ Mode Terang";
     }
 
-    applyTheme(defaultConfig);
+        applyTheme(defaultConfig);
     setActiveMenu("profile");
     updateHeroImage();
+    updateLogoImage();      // 🔽 tambahin ini
     renderCalendarYear(currentYear);
     return;
+
   }
 
   window.elementSdk.init({
@@ -2741,10 +3102,11 @@ async function initElementSdk() {
     },
   });
 
-  buildStaticLayout();
+    buildStaticLayout();
   applyTheme(window.elementSdk.config || defaultConfig);
   setActiveMenu("profile");
   updateHeroImage();
+  updateLogoImage();   // 🔽 tambahin
   renderCalendarYear(currentYear);
 }
 
