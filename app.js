@@ -823,7 +823,7 @@ function renderGallery() {
     const caption = document.createElement("p");
     caption.className = "w-full text-sm px-5 py-4 text-white font-medium";
     caption.textContent = item.caption;
-    captionWrap.appendChild(caption);
+        captionWrap.appendChild(caption);
 
     if (hasGalleryEditAccess) {
       const editControls = document.createElement("div");
@@ -850,6 +850,20 @@ function renderGallery() {
     }
 
     itemDiv.appendChild(captionWrap);
+
+    // ⬇️ TAMBAHAN BARU: klik kartu = preview gambar
+    itemDiv.addEventListener("click", (e) => {
+      // Kalau lagi mode edit dan yang diklik tombol Edit/Hapus, jangan buka popup
+      if (hasGalleryEditAccess && e.target.closest("button")) {
+        return;
+      }
+
+      if (item.imageUrl) {
+        openImagePreview(item.imageUrl, item.caption);
+      }
+    });
+    // ⬆️ TAMBAHAN BARU
+
     uiRefs.galleryContainer.appendChild(itemDiv);
   });
 
@@ -999,6 +1013,82 @@ function deleteGalleryItem(id) {
   saveState();
 }
 
+// ⬇️ TEMPELIN FUNGSI BARU INI DI SINI
+function openImagePreview(imageUrl, caption) {
+  if (!imageUrl) return; // Kalau gak ada gambar, gak usah apa-apa
+
+  const host = document.createElement("div");
+  host.className =
+    "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm";
+
+  const panel = document.createElement("div");
+  panel.className =
+    "w-[90%] max-w-3xl rounded-3xl p-4 md:p-6 shadow-2xl flex flex-col gap-3";
+
+  const headerRow = document.createElement("div");
+  headerRow.className = "flex items-center justify-between gap-3 mb-2";
+
+  const title = document.createElement("p");
+  title.className = "text-sm md:text-base font-semibold";
+  title.textContent = caption || "Pratinjau Foto Kegiatan";
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className =
+    "focus-outline px-3 py-1.5 rounded-full text-xs md:text-sm font-medium shadow-md";
+  closeBtn.textContent = "Tutup ✕";
+  closeBtn.addEventListener("click", () => host.remove());
+
+  headerRow.appendChild(title);
+  headerRow.appendChild(closeBtn);
+
+  const imgWrap = document.createElement("div");
+  imgWrap.className = "w-full max-h-[70vh] flex items-center justify-center";
+
+  const img = document.createElement("img");
+  img.src = imageUrl;
+  img.alt = caption || "Foto Kegiatan";
+  img.className = "max-h-[70vh] max-w-full object-contain rounded-2xl";
+
+  imgWrap.appendChild(img);
+
+  if (caption) {
+    const cap = document.createElement("p");
+    cap.className = "text-xs md:text-sm opacity-80 mt-1";
+    cap.textContent = caption;
+    panel.appendChild(headerRow);
+    panel.appendChild(imgWrap);
+    panel.appendChild(cap);
+  } else {
+    panel.appendChild(headerRow);
+    panel.appendChild(imgWrap);
+  }
+
+  host.appendChild(panel);
+  document.body.appendChild(host);
+
+  // Klik luar panel = close
+  host.addEventListener("click", (e) => {
+    if (e.target === host) host.remove();
+  });
+
+  // Tema ikut config
+  const cfg = window.elementSdk ? window.elementSdk.config : defaultConfig;
+  const surface = cfg.surface_color || defaultConfig.surface_color;
+  const textColor = cfg.text_color || defaultConfig.text_color;
+  const primary =
+    cfg.primary_action_color || defaultConfig.primary_action_color;
+  const secondary =
+    cfg.secondary_action_color || defaultConfig.secondary_action_color;
+
+  panel.style.backgroundColor = surface;
+  panel.style.color = textColor;
+  closeBtn.style.backgroundColor = "transparent";
+  closeBtn.style.border = `1px solid ${secondary}`;
+  closeBtn.style.color = secondary;
+}
+
+
 function addNewGalleryItem() {
   const host = document.createElement("div");
   host.className =
@@ -1065,17 +1155,23 @@ function addNewGalleryItem() {
   form.appendChild(submit);
 
   form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const caption = textarea.value.trim();
-    const imageUrl = urlInput.value.trim();
-    if (caption) {
-      const newId = Math.max(...galleryItems.map((i) => i.id), 0) + 1;
-      galleryItems.push({ id: newId, imageUrl, caption });
-      host.remove();
-      renderGallery();
-      saveState();
-    }
-  });
+  e.preventDefault();
+  const caption = textarea.value.trim();
+  const imageUrl = urlInput.value.trim();
+
+  // Minimal salah satu terisi: URL foto atau keterangan
+  if (!caption && !imageUrl) {
+    alert("Isi URL foto atau keterangan dulu salah satu ya 🙂");
+    return;
+  }
+
+  const newId = Math.max(...galleryItems.map((i) => i.id), 0) + 1;
+  galleryItems.push({ id: newId, imageUrl, caption });
+  host.remove();
+  renderGallery();
+  saveState();
+});
+
 
   panel.appendChild(titleRow);
   panel.appendChild(form);
