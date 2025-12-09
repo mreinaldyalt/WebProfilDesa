@@ -1126,11 +1126,10 @@ monthSelect.className =
   uiRefs.addSectionBtn = addSectionBtn;
   uiRefs.deleteSectionBtn = deleteSectionBtn;
 
-  // 🔽 referensi mobile nav
-      uiRefs.mobileNavFab = mobileNavFab;
+    uiRefs.mobileNavFab = mobileNavFab;
   uiRefs.mobileNavOverlay = mobileNavOverlay;
   uiRefs.mobileNavPanel = mobileNavPanel;
-  uiRefs.mobileNavThreshold = header.offsetHeight || 240; // titik scroll kira-kira
+  uiRefs.mobileNavThreshold = 120; // px scroll
   uiRefs.mobileProfileLink = mobileProfileBtn;
   uiRefs.mobileCalendarLink = mobileCalendarBtn;
   uiRefs.mobileEditLink = mobileEditBtn; // 🔽 simpan referensi tombol Mode Edit
@@ -2755,11 +2754,14 @@ function showPasswordPrompt(callback) {
 }
 
 // ===================== MOBILE NAV (HP) =====================
+// status panel menu HP terbuka / tertutup
+let isMobileNavOpen = false;
 function openMobileNav() {
   if (!uiRefs.mobileNavOverlay || !uiRefs.mobileNavPanel) return;
   uiRefs.mobileNavOverlay.style.opacity = "1";
   uiRefs.mobileNavOverlay.style.pointerEvents = "auto";
   uiRefs.mobileNavPanel.style.transform = "translateX(0)";
+  isMobileNavOpen = true;
 }
 
 function closeMobileNav() {
@@ -2767,7 +2769,9 @@ function closeMobileNav() {
   uiRefs.mobileNavOverlay.style.opacity = "0";
   uiRefs.mobileNavOverlay.style.pointerEvents = "none";
   uiRefs.mobileNavPanel.style.transform = "translateX(-100%)";
+  isMobileNavOpen = false;
 }
+
 
 // helper untuk ambil posisi scroll yang bener (wrapper, bukan window)
 function getScrollY() {
@@ -3052,8 +3056,14 @@ function setupInteractions() {
     }
   };
 
-  if (uiRefs.mobileNavFab) {
-    uiRefs.mobileNavFab.addEventListener("click", openMobileNav);
+    if (uiRefs.mobileNavFab) {
+    uiRefs.mobileNavFab.addEventListener("click", () => {
+      if (isMobileNavOpen) {
+        closeMobileNav();
+      } else {
+        openMobileNav();
+      }
+    });
   }
   if (uiRefs.mobileNavOverlay) {
     uiRefs.mobileNavOverlay.addEventListener("click", (e) => {
