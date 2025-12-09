@@ -2121,8 +2121,6 @@ function showPasswordPrompt(callback) {
   input.focus();
 }
 
-
-
 // ===================== MOBILE NAV (HP) =====================
 function openMobileNav() {
   if (!uiRefs.mobileNavOverlay || !uiRefs.mobileNavPanel) return;
@@ -2136,6 +2134,19 @@ function closeMobileNav() {
   uiRefs.mobileNavOverlay.style.opacity = "0";
   uiRefs.mobileNavOverlay.style.pointerEvents = "none";
   uiRefs.mobileNavPanel.style.transform = "translateX(-100%)";
+}
+
+// helper untuk ambil posisi scroll yang bener (wrapper, bukan window)
+function getScrollY() {
+  if (uiRefs.mainWrapper) {
+    return uiRefs.mainWrapper.scrollTop || 0;
+  }
+  return (
+    window.scrollY ||
+    document.documentElement.scrollTop ||
+    document.body.scrollTop ||
+    0
+  );
 }
 
 // ===================== INTERAKSI GLOBAL =====================
@@ -2307,12 +2318,13 @@ function setupInteractions() {
     });
   }
 
-  // === MOBILE NAV: FAB + behaviour scroll ===
+    // === MOBILE NAV: FAB + behaviour scroll ===
   const isMobile = () => window.innerWidth < 768;
 
   const updateMobileNavFab = () => {
     if (!uiRefs.mobileNavFab) return;
 
+    // kalau sudah tablet/desktop, sembunyikan FAB + tutup menu
     if (!isMobile()) {
       uiRefs.mobileNavFab.style.opacity = "0";
       uiRefs.mobileNavFab.style.pointerEvents = "none";
@@ -2321,7 +2333,9 @@ function setupInteractions() {
     }
 
     const threshold = uiRefs.mobileNavThreshold || 240;
-    if (window.scrollY > threshold) {
+    const currentScroll = getScrollY();
+
+    if (currentScroll > threshold) {
       uiRefs.mobileNavFab.style.opacity = "1";
       uiRefs.mobileNavFab.style.pointerEvents = "auto";
     } else {
@@ -2342,8 +2356,14 @@ function setupInteractions() {
     });
   }
 
+  // dengarkan scroll di wrapper (utama) dan window (cadangan)
+  if (uiRefs.mainWrapper) {
+    uiRefs.mainWrapper.addEventListener("scroll", updateMobileNavFab);
+  }
   window.addEventListener("scroll", updateMobileNavFab);
   window.addEventListener("resize", updateMobileNavFab);
+
+  // set awal
   updateMobileNavFab();
 }
 
