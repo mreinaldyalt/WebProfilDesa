@@ -44,26 +44,36 @@ const uiRefs = {
   calendarSectionTitle: null,
   themeToggle: null,
   galleryContainer: null,
-    calendarIntro: null,
+  calendarIntro: null,
+
+  // 📅 Kalender
   calendarYearLabel: null,
-  calendarMonthSelect: null,   // 🔽 baru
+  calendarMonthSelect: null,
   calendarGridContainer: null,
   calendarPrevYearBtn: null,
   calendarNextYearBtn: null,
-calendarMonthSelect: null,
 
-  // 🔽 tambahan untuk mobile menu
-      mobileNavFab: null,
+  // 📁 Bagian dokumentasi (section manager)
+  sectionButtonsWrap: null,
+  sectionAdminRow: null,
+  addSectionBtn: null,
+  deleteSectionBtn: null,
+  sectionSearchInput: null,      // 🔽 input cari nama bagian
+  sectionPaginationWrap: null,   // 🔽 wadah tombol halaman
+
+  // 📱 Mobile menu
+  mobileNavFab: null,
   mobileNavOverlay: null,
   mobileNavPanel: null,
   mobileNavThreshold: 0,
   mobileProfileLink: null,
   mobileCalendarLink: null,
-  mobileEditLink: null, // 🔽 tombol "Mode Edit" di menu melayang HP
+  mobileEditLink: null, // tombol "Mode Edit" di menu melayang HP
 
-  // 🔽 FAB untuk toggle tema di HP
+  // 📱 FAB untuk toggle tema di HP
   mobileThemeFab: null,
 };
+
 
 let currentYear = new Date().getFullYear();
 // bulan sekarang (0 = Januari, 11 = Desember)
@@ -787,6 +797,7 @@ heroImageContainer.style.height = heroHeight;
   sectionManager.id = "section-manager";
   sectionManager.className = "mb-4 flex flex-col gap-3";
 
+  // baris label + tombol bagian
   const sectionRow = document.createElement("div");
   sectionRow.className = "flex flex-wrap items-center gap-2";
 
@@ -800,6 +811,26 @@ heroImageContainer.style.height = heroHeight;
 
   sectionRow.appendChild(sectionLabel);
   sectionRow.appendChild(sectionButtonsWrap);
+
+  // 🔍 baris search
+  const sectionSearchRow = document.createElement("div");
+  sectionSearchRow.className =
+    "flex flex-wrap items-center gap-2 mt-2";
+
+  const sectionSearchInput = document.createElement("input");
+  sectionSearchInput.id = "section-search-input";
+  sectionSearchInput.type = "text";
+  sectionSearchInput.placeholder = "Cari folder...";
+  sectionSearchInput.className =
+    "w-full md:w-64 px-3 py-2 rounded-full text-xs md:text-sm border-2 bg-transparent";
+
+  sectionSearchRow.appendChild(sectionSearchInput);
+
+  // 🔢 baris pagination
+  const sectionPaginationWrap = document.createElement("div");
+  sectionPaginationWrap.id = "section-pagination-wrap";
+  sectionPaginationWrap.className =
+    "flex flex-wrap items-center gap-1 mt-1 text-xs";
 
   const sectionAdminRow = document.createElement("div");
   sectionAdminRow.id = "section-admin-row";
@@ -823,8 +854,11 @@ heroImageContainer.style.height = heroHeight;
   sectionAdminRow.appendChild(addSectionBtn);
   sectionAdminRow.appendChild(deleteSectionBtn);
 
-  sectionManager.appendChild(sectionRow);
-  sectionManager.appendChild(sectionAdminRow);
+  // urutan susunan dalam manager:
+  sectionManager.appendChild(sectionRow);            // tombol bagian
+  sectionManager.appendChild(sectionSearchRow);      // input search
+  sectionManager.appendChild(sectionPaginationWrap); // tombol halaman
+  sectionManager.appendChild(sectionAdminRow);       // tambah/hapus (hanya edit mode)
 
   // header galeri
   const galleryHeader = document.createElement("div");
@@ -1119,12 +1153,13 @@ monthSelect.className =
   uiRefs.calendarPrevYearBtn = yearPrev;
   uiRefs.calendarNextYearBtn = yearNext;
 
-
-  // 🔽 referensi section manager
+    // 🔽 referensi section manager
   uiRefs.sectionButtonsWrap = sectionButtonsWrap;
   uiRefs.sectionAdminRow = sectionAdminRow;
   uiRefs.addSectionBtn = addSectionBtn;
   uiRefs.deleteSectionBtn = deleteSectionBtn;
+  uiRefs.sectionSearchInput = sectionSearchInput;          // baru
+  uiRefs.sectionPaginationWrap = sectionPaginationWrap;    // baru
 
     uiRefs.mobileNavFab = mobileNavFab;
   uiRefs.mobileNavOverlay = mobileNavOverlay;
@@ -3029,6 +3064,13 @@ function setupInteractions() {
   if (uiRefs.deleteSectionBtn) {
     uiRefs.deleteSectionBtn.addEventListener("click", deleteCurrentSection);
   }
+  // 🔍 search bagian (logikanya di menu.js)
+  if (uiRefs.sectionSearchInput && typeof setSectionSearchQuery === "function") {
+    uiRefs.sectionSearchInput.addEventListener("input", (e) => {
+      setSectionSearchQuery(e.target.value);
+    });
+  }
+
 
   // === MOBILE NAV: FAB + behaviour scroll ===
   const isMobile = () => window.innerWidth < 768;
