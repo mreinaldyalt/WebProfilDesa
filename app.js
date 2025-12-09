@@ -46,6 +46,14 @@ const uiRefs = {
   calendarGridContainer: null,
   calendarPrevYearBtn: null,
   calendarNextYearBtn: null,
+
+  // 🔽 tambahan untuk mobile menu
+  mobileNavFab: null,
+  mobileNavOverlay: null,
+  mobileNavPanel: null,
+  mobileNavThreshold: 0,
+  mobileProfileLink: null,
+  mobileCalendarLink: null,
 };
 
 let currentYear = new Date().getFullYear();
@@ -724,9 +732,65 @@ heroImageContainer.style.height = heroHeight;
   footerInner.appendChild(footerNote);
   footer.appendChild(footerInner);
 
-  wrapper.appendChild(header);
+    wrapper.appendChild(header);
   wrapper.appendChild(main);
   wrapper.appendChild(footer);
+
+  // === MOBILE NAV (slide dari kiri, hanya HP) ===
+  const mobileNavOverlay = document.createElement("div");
+  mobileNavOverlay.id = "mobile-nav-overlay";
+  mobileNavOverlay.className =
+    "fixed inset-0 z-30 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 md:hidden";
+
+  const mobileNavPanel = document.createElement("div");
+  mobileNavPanel.id = "mobile-nav-panel";
+  mobileNavPanel.className =
+    "absolute left-0 top-0 h-full w-64 max-w-[80%] bg-slate-900 shadow-2xl transform -translate-x-full transition-transform duration-300 flex flex-col";
+
+  const mobileNavHeader = document.createElement("div");
+  mobileNavHeader.className =
+    "px-5 py-4 border-b border-white/10 flex items-center gap-3";
+
+  const mobileNavTitle = document.createElement("p");
+  mobileNavTitle.className =
+    "text-sm font-semibold tracking-wide text-white";
+  mobileNavTitle.textContent = "Menu Perumahan";
+
+  mobileNavHeader.appendChild(mobileNavTitle);
+  mobileNavPanel.appendChild(mobileNavHeader);
+
+  const mobileNavList = document.createElement("div");
+  mobileNavList.className = "flex flex-col py-2";
+
+  const mobileProfileBtn = document.createElement("button");
+  mobileProfileBtn.type = "button";
+  mobileProfileBtn.className =
+    "w-full text-left px-5 py-3 text-sm font-medium text-white hover:bg-white/10 transition-colors";
+  mobileProfileBtn.textContent = "🏡 Profil Perumahan";
+
+  const mobileCalendarBtn = document.createElement("button");
+  mobileCalendarBtn.type = "button";
+  mobileCalendarBtn.className =
+    "w-full text-left px-5 py-3 text-sm font-medium text-white hover:bg-white/10 transition-colors";
+  mobileCalendarBtn.textContent = "📅 Kalender Kegiatan";
+
+  mobileNavList.appendChild(mobileProfileBtn);
+  mobileNavList.appendChild(mobileCalendarBtn);
+  mobileNavPanel.appendChild(mobileNavList);
+  mobileNavOverlay.appendChild(mobileNavPanel);
+  wrapper.appendChild(mobileNavOverlay);
+
+  // Tombol bulat “☰ Menu” di pojok kiri atas (hanya HP)
+  const mobileNavFab = document.createElement("button");
+  mobileNavFab.id = "mobile-nav-fab";
+  mobileNavFab.type = "button";
+  mobileNavFab.className =
+    "fixed left-4 top-4 z-40 md:hidden px-3 py-2 rounded-full shadow-lg bg-emerald-500 text-white text-xs font-semibold flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300";
+  mobileNavFab.innerHTML =
+    "<span class='text-base'>☰</span><span>Menu</span>";
+  wrapper.appendChild(mobileNavFab);
+
+  // baru kita tempel ke root
   root.appendChild(wrapper);
 
   // simpan referensi
@@ -751,11 +815,20 @@ heroImageContainer.style.height = heroHeight;
   uiRefs.calendarPrevYearBtn = yearPrev;
   uiRefs.calendarNextYearBtn = yearNext;
 
+  // 🔽 referensi mobile nav
+  uiRefs.mobileNavFab = mobileNavFab;
+  uiRefs.mobileNavOverlay = mobileNavOverlay;
+  uiRefs.mobileNavPanel = mobileNavPanel;
+  uiRefs.mobileNavThreshold = header.offsetHeight || 240; // titik scroll kira-kira
+  uiRefs.mobileProfileLink = mobileProfileBtn;
+  uiRefs.mobileCalendarLink = mobileCalendarBtn;
+
   setupInteractions();
   setupScrollAnimations();
   renderGallery();
   renderCalendarYear(currentYear);
 }
+
 
 // ===================== ANIMASI SCROLL =====================
 function setupScrollAnimations() {
@@ -2048,7 +2121,25 @@ function showPasswordPrompt(callback) {
   input.focus();
 }
 
+
+
+// ===================== MOBILE NAV (HP) =====================
+function openMobileNav() {
+  if (!uiRefs.mobileNavOverlay || !uiRefs.mobileNavPanel) return;
+  uiRefs.mobileNavOverlay.style.opacity = "1";
+  uiRefs.mobileNavOverlay.style.pointerEvents = "auto";
+  uiRefs.mobileNavPanel.style.transform = "translateX(0)";
+}
+
+function closeMobileNav() {
+  if (!uiRefs.mobileNavOverlay || !uiRefs.mobileNavPanel) return;
+  uiRefs.mobileNavOverlay.style.opacity = "0";
+  uiRefs.mobileNavOverlay.style.pointerEvents = "none";
+  uiRefs.mobileNavPanel.style.transform = "translateX(-100%)";
+}
+
 // ===================== INTERAKSI GLOBAL =====================
+
 function setupInteractions() {
   uiRefs.themeToggle.addEventListener("click", () => {
     isLightTheme = !isLightTheme;
@@ -2127,7 +2218,7 @@ function setupInteractions() {
       });
     } else {
       hasGalleryEditAccess = false;
-      editGalleryBtn.textContent = "🔒 Edit Galeri";
+      editGalleryBtn.textContent = "🔒 Mode Edit";
 
       const heroEditBtn = document.getElementById("edit-hero-btn");
       if (heroEditBtn) heroEditBtn.classList.add("hidden");
@@ -2188,14 +2279,74 @@ function setupInteractions() {
 
     yearInput.addEventListener("change", applyYearInput);
 
-    yearInput.addEventListener("keyup", (e) => {
+        yearInput.addEventListener("keyup", (e) => {
       if (e.key === "Enter") {
         applyYearInput();
         yearInput.blur();
       }
     });
   }
+
+  // === MOBILE NAV: klik item menu ===
+  if (uiRefs.mobileProfileLink) {
+    uiRefs.mobileProfileLink.addEventListener("click", () => {
+      setActiveMenu("profile");
+      closeMobileNav();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
+  if (uiRefs.mobileCalendarLink) {
+    uiRefs.mobileCalendarLink.addEventListener("click", () => {
+      setActiveMenu("calendar");
+      closeMobileNav();
+      const calendarSection = document.getElementById("section-calendar");
+      if (calendarSection) {
+        calendarSection.scrollIntoView({ behavior: "smooth" });
+      }
+    });
+  }
+
+  // === MOBILE NAV: FAB + behaviour scroll ===
+  const isMobile = () => window.innerWidth < 768;
+
+  const updateMobileNavFab = () => {
+    if (!uiRefs.mobileNavFab) return;
+
+    if (!isMobile()) {
+      uiRefs.mobileNavFab.style.opacity = "0";
+      uiRefs.mobileNavFab.style.pointerEvents = "none";
+      closeMobileNav();
+      return;
+    }
+
+    const threshold = uiRefs.mobileNavThreshold || 240;
+    if (window.scrollY > threshold) {
+      uiRefs.mobileNavFab.style.opacity = "1";
+      uiRefs.mobileNavFab.style.pointerEvents = "auto";
+    } else {
+      uiRefs.mobileNavFab.style.opacity = "0";
+      uiRefs.mobileNavFab.style.pointerEvents = "none";
+    }
+  };
+
+  if (uiRefs.mobileNavFab) {
+    uiRefs.mobileNavFab.addEventListener("click", openMobileNav);
+  }
+  if (uiRefs.mobileNavOverlay) {
+    uiRefs.mobileNavOverlay.addEventListener("click", (e) => {
+      // klik area gelap di luar panel = tutup
+      if (e.target === uiRefs.mobileNavOverlay) {
+        closeMobileNav();
+      }
+    });
+  }
+
+  window.addEventListener("scroll", updateMobileNavFab);
+  window.addEventListener("resize", updateMobileNavFab);
+  updateMobileNavFab();
 }
+
 
 // ===================== INIT DARI CANVA / STANDALONE =====================
 async function initElementSdk() {
