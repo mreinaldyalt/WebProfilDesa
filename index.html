@@ -17,6 +17,7 @@
     <!-- Firebase compat SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
 
     <script>
       const firebaseConfig = {
@@ -34,6 +35,9 @@
 
       // Firestore instance global
       window.desaDb = firebase.firestore();
+
+// Storage
+window.desaStorage = firebase.storage();
     </script>
 
     <!-- CSS kita sendiri (SUDAH pakai versi) -->
@@ -44,8 +48,9 @@
     <div id="app-root" class="h-full w-full"></div>
 
         <!-- JS utama -->
-    <script src="app.js?v=1.0.0"></script>
-    <script src="menu.js?v=1.0.0"></script>
+<script src="app.js?v=2.0.0"></script>
+<script src="menu.js?v=2.0.0"></script>
+
 
   </body>
 </html>
