@@ -8,21 +8,21 @@ const defaultConfig = {
   font_family: "Inter",
   font_size: 16,
 
-  header_title: "Desa Setiamekar Tambun Selatan",
+  header_title: "Perumahan Setiamekar Tambun Selatan",
   header_subtitle:
-    "Desa Setiamekar RW 13 , Kec. Tambun Selatan, Kab. Bekasi",
-  about_title: "Tentang Desa Kami",
+    "Perumahan Setiamekar RW 13 , Kec. Tambun Selatan, Kab. Bekasi",
+  about_title: "Tentang Perumahan Kami",
   about_body:
-    "Desa Setiamekar Tambun Selatan adalah desa yang terletak di wilayah strategis dengan akses mudah namun tetap mempertahankan suasana pedesaan yang asri. Masyarakat kami menjunjung tinggi nilai-nilai gotong royong, kearifan lokal, dan keagamaan yang kuat.",
-  activities_title: "Kegiatan Rutin Desa",
+    "Perumahan Setiamekar Tambun Selatan adalah Perumahan yang terletak di wilayah strategis dengan akses mudah namun tetap mempertahankan suasana pedesaan yang asri. Masyarakat kami menjunjung tinggi nilai-nilai gotong royong, kearifan lokal, dan keagamaan yang kuat.",
+  activities_title: "Kegiatan Rutin Perumahan",
   activities_body:
     "Berbagai kegiatan rutin seperti pengajian mingguan, kerja bakti bulanan, pelatihan UMKM, festival budaya, dan kegiatan pemuda diadakan untuk mempererat kebersamaan dan meningkatkan kesejahteraan warga.",
-  gallery_title: "Galeri Kegiatan Desa",
+  gallery_title: "Galeri Kegiatan Perumahan",
   calendar_section_title: "Kalender Kegiatan Tahunan",
   calendar_intro_text:
-    "Lihat dan kelola jadwal kegiatan desa sepanjang tahun. Perangkat desa dapat masuk mode edit dengan kata sandi khusus.",
+    "Lihat dan kelola jadwal kegiatan Perumahan sepanjang tahun. Perangkat Perumahan dapat masuk mode edit dengan kata sandi khusus.",
   footer_text:
-    "Desa Setiamekar Tambun Selatan • Bersama Membangun Desa yang Lebih Baik",
+    "Perumahan Setiamekar Tambun Selatan • Bersama Membangun Perumahan yang Lebih Baik",
 };
 
 const uiRefs = {
@@ -57,7 +57,7 @@ let isLightTheme = false;
 
 let heroImageUrl = "";
 let aboutDescription =
-  "Desa Setiamekar Tambun Selatan adalah desa yang terletak di wilayah strategis dengan akses mudah namun tetap mempertahankan suasana pedesaan yang asri. Masyarakat kami menjunjung tinggi nilai-nilai gotong royong, kearifan lokal, dan keagamaan yang kuat.";
+  "Perumahan Setiamekar Tambun Selatan adalah Perumahan yang terletak di wilayah strategis dengan akses mudah namun tetap mempertahankan suasana pedesaan yang asri. Masyarakat kami menjunjung tinggi nilai-nilai gotong royong, kearifan lokal, dan keagamaan yang kuat.";
 let activitiesDescription =
   "Berbagai kegiatan rutin seperti pengajian mingguan, kerja bakti bulanan, pelatihan UMKM, festival budaya, dan kegiatan pemuda diadakan untuk mempererat kebersamaan dan meningkatkan kesejahteraan warga.";
 
@@ -66,12 +66,12 @@ const COLLECTION_NAME = "desa_config";
 const DOCUMENT_ID = "global_state";
 
 const galleryItems = [
-  { id: 1, imageUrl: "", caption: "Kerja bakti membersihkan lingkungan desa" },
+  { id: 1, imageUrl: "", caption: "Kerja bakti membersihkan lingkungan Perumahan" },
   { id: 2, imageUrl: "", caption: "Pengajian rutin mingguan bersama warga" },
-  { id: 3, imageUrl: "", caption: "Pelatihan UMKM produk lokal desa" },
+  { id: 3, imageUrl: "", caption: "Pelatihan UMKM produk lokal Perumahan" },
   { id: 4, imageUrl: "", caption: "Perayaan hari besar keagamaan" },
   { id: 5, imageUrl: "", caption: "Festival budaya dan seni tradisional" },
-  { id: 6, imageUrl: "", caption: "Kegiatan pemuda dan olahraga desa" },
+  { id: 6, imageUrl: "", caption: "Kegiatan pemuda dan olahraga Perumahan" },
 ];
 
 async function loadState() {
@@ -402,7 +402,7 @@ profileBtn.type = "button";
 profileBtn.className =
   "focus-outline px-4 py-2 md:px-6 md:py-2.5 rounded-full font-semibold shadow-md transition-all duration-300 hover:scale-105 text-xs md:text-sm";
 
-  profileBtn.textContent = "🏡 Profil Desa";
+  profileBtn.textContent = "🏡 Profil Perumahan";
 
   const calendarBtn = document.createElement("button");
 calendarBtn.id = "nav-calendar";
@@ -1241,7 +1241,7 @@ function editAboutDescription() {
 
   const title = document.createElement("h2");
   title.className = "text-lg font-bold";
-  title.textContent = "✏️ Edit Tentang Desa";
+  title.textContent = "✏️ Edit Tentang Perumahan";
 
   const close = document.createElement("button");
   close.type = "button";
@@ -1743,7 +1743,7 @@ function onCalendarDateClick(year, month, day) {
       "w-full rounded-xl px-4 py-3 text-sm bg-transparent border-2";
     textarea.rows = 4;
     textarea.placeholder =
-      "Contoh: Rapat koordinasi panitia HUT RI, jam 19.30 di balai desa.";
+      "Contoh: Rapat koordinasi panitia HUT RI, jam 19.30 di balai Perumahan.";
     textarea.value = events.join("\n");
 
     const btnRow = document.createElement("div");
@@ -1804,7 +1804,7 @@ function onCalendarDateClick(year, month, day) {
     const info = document.createElement("p");
     info.className = "text-xs opacity-70 pt-3 border-t text-center";
     info.textContent =
-      "Untuk mengedit kegiatan, gunakan tombol 'Mode Edit' dengan kata sandi perangkat desa.";
+      "Untuk mengedit kegiatan, gunakan tombol 'Mode Edit' dengan kata sandi perangkat Perumahan.";
     panel.appendChild(info);
   }
 
@@ -1878,7 +1878,7 @@ function showPasswordPrompt(callback) {
   const info = document.createElement("p");
   info.className = "text-sm opacity-80";
   info.textContent =
-    "Masukkan kata sandi khusus perangkat desa untuk mengaktifkan mode edit.";
+    "Masukkan kata sandi khusus perangkat Perumahan untuk mengaktifkan mode edit.";
 
   const form = document.createElement("form");
   form.className = "flex flex-col gap-3";
