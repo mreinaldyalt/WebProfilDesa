@@ -50,6 +50,7 @@ const uiRefs = {
   calendarGridContainer: null,
   calendarPrevYearBtn: null,
   calendarNextYearBtn: null,
+calendarMonthSelect: null,
 
   // 🔽 tambahan untuk mobile menu
       mobileNavFab: null,
@@ -889,64 +890,84 @@ heroImageContainer.style.height = heroHeight;
   calTitleBlock.appendChild(calIcon);
   calTitleBlock.appendChild(calTextBlock);
 
-    const calControls = document.createElement("div");
-  calControls.className = "flex flex-wrap items-center gap-3";
+      const calControls = document.createElement("div");
+  // 🔽 2 baris: baris 1 = tahun, baris 2 = bulan + mode edit
+  calControls.className = "flex flex-col gap-2";
 
+  // ===== ROW 1: TAHUN LALU - 2025 - TAHUN DEPAN =====
   const yearPrev = document.createElement("button");
   yearPrev.id = "calendar-prev-year";
   yearPrev.type = "button";
   yearPrev.className =
-    "focus-outline px-4 py-2 rounded-full font-medium shadow-md transition-all duration-300 hover:scale-105 text-sm";
+    "focus-outline px-4 py-2 rounded-full font-medium shadow-md transition-all duration-300 hover:scale-105 text-xs md:text-sm";
   yearPrev.textContent = "← Tahun Lalu";
 
   const yearLabel = document.createElement("input");
   yearLabel.id = "calendar-year-label";
   yearLabel.type = "number";
   yearLabel.className =
-    "px-6 py-2 rounded-full font-bold shadow-lg text-base text-center";
+    "px-6 py-2 rounded-full font-bold shadow-lg text-sm md:text-base text-center";
   yearLabel.value = currentYear.toString();
   yearLabel.setAttribute("min", "1900");
   yearLabel.setAttribute("max", "3000");
   yearLabel.setAttribute("aria-label", "Pilih tahun kalender");
 
-  // 🔽 SELECT BULAN (khusus HP, di desktop bisa ikut tampil juga kalau mau)
-  const monthSelect = document.createElement("select");
-  monthSelect.id = "calendar-month-select";
-  monthSelect.className =
-    "block md:hidden px-3 py-2 rounded-full text-xs font-medium shadow-md border";
-  monthSelect.setAttribute("aria-label", "Pilih bulan");
-
-  monthNames.forEach((name, idx) => {
-    const opt = document.createElement("option");
-    opt.value = String(idx);        // 0–11
-    opt.textContent = name;
-    monthSelect.appendChild(opt);
-  });
-  monthSelect.value = String(currentMonth);
-
   const yearNext = document.createElement("button");
   yearNext.id = "calendar-next-year";
   yearNext.type = "button";
   yearNext.className =
-    "focus-outline px-4 py-2 rounded-full font-medium shadow-md transition-all duration-300 hover:scale-105 text-sm";
+    "focus-outline px-4 py-2 rounded-full font-medium shadow-md transition-all duration-300 hover:scale-105 text-xs md:text-sm";
   yearNext.textContent = "Tahun Depan →";
+
+  const yearRow = document.createElement("div");
+  yearRow.className =
+    "flex flex-wrap items-center justify-center md:justify-end gap-2";
+  yearRow.appendChild(yearPrev);
+  yearRow.appendChild(yearLabel);
+  yearRow.appendChild(yearNext);
+
+  // ===== ROW 2: PILIH BULAN + MODE EDIT =====
+  // dropdown / tombol pilih bulan
+  const monthSelect = document.createElement("select");
+monthSelect.id = "calendar-month-select";
+monthSelect.className =
+  "px-4 py-2 rounded-full text-xs md:text-sm font-semibold border-2 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-0 bg-transparent md:hidden";
+
+  monthNames.forEach((name, index) => {
+    const opt = document.createElement("option");
+    opt.value = String(index);
+    opt.textContent = name;
+    monthSelect.appendChild(opt);
+  });
+
+  // set awal ke currentMonth (global yang sudah kita pakai di renderCalendarYear)
+  monthSelect.value = String(typeof currentMonth === "number" ? currentMonth : 0);
 
   const editButton = document.createElement("button");
   editButton.id = "calendar-edit-toggle";
   editButton.type = "button";
   editButton.className =
-    "focus-outline px-5 py-2 rounded-full font-semibold shadow-lg transition-all duration-300 hover:scale-105 text-sm";
+    "focus-outline px-5 py-2 rounded-full font-semibold shadow-lg transition-all duration-300 hover:scale-105 text-xs md:text-sm";
   editButton.textContent = "🔒 Mode Edit";
 
-  calControls.appendChild(yearPrev);
-  calControls.appendChild(yearLabel);
-  calControls.appendChild(monthSelect); // 🔽 tambahkan di sini
-  calControls.appendChild(yearNext);
-  calControls.appendChild(editButton);
+  const bottomRow = document.createElement("div");
+  bottomRow.className =
+    "flex flex-wrap items-center justify-center md:justify-end gap-2";
+  bottomRow.appendChild(monthSelect);
+  bottomRow.appendChild(editButton);
 
+  calControls.appendChild(yearRow);
+  calControls.appendChild(bottomRow);
 
   calHeader.appendChild(calTitleBlock);
   calHeader.appendChild(calControls);
+
+  // simpan referensi (⤵ penting!)
+  uiRefs.calendarYearLabel = yearLabel;
+  uiRefs.calendarPrevYearBtn = yearPrev;
+  uiRefs.calendarNextYearBtn = yearNext;
+  uiRefs.calendarMonthSelect = monthSelect;
+
 
   const calendarGridContainer = document.createElement("div");
   calendarGridContainer.id = "calendar-grid-container";
@@ -2147,14 +2168,13 @@ function applyTheme(config) {
     updateActiveNavStyles(currentActiveMenu || "profile");
   }
 
-
   const editBtn = document.getElementById("calendar-edit-toggle");
   if (editBtn) {
     editBtn.style.backgroundColor = primary;
     editBtn.style.color = bg;
   }
 
-  const yearBtns = [uiRefs.calendarPrevYearBtn, uiRefs.calendarNextYearBtn];
+    const yearBtns = [uiRefs.calendarPrevYearBtn, uiRefs.calendarNextYearBtn];
   yearBtns.forEach((btn) => {
     if (btn) {
       btn.style.backgroundColor = "transparent";
@@ -2167,6 +2187,13 @@ function applyTheme(config) {
     uiRefs.calendarYearLabel.style.backgroundColor = surface;
     uiRefs.calendarYearLabel.style.color = primary;
     uiRefs.calendarYearLabel.style.borderColor = primary;
+  }
+
+  // 🔽 stylenya dropdown bulan (ikut tema)
+  if (uiRefs.calendarMonthSelect) {
+    uiRefs.calendarMonthSelect.style.backgroundColor = surface;
+    uiRefs.calendarMonthSelect.style.color = text;
+    uiRefs.calendarMonthSelect.style.borderColor = primary;
   }
 }
 
