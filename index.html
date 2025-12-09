@@ -14,34 +14,36 @@
     <script src="/_sdk/element_sdk.js"></script>
     <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
 
-	    <!-- Firebase compat SDK -->
+    <!-- Firebase compat SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
     <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCGJaFBTsWOJSf-mbohmxFlTycgdMxc0TE",
-  authDomain: "desa-setiamekar-web.firebaseapp.com",
-  projectId: "desa-setiamekar-web",
-  storageBucket: "desa-setiamekar-web.firebasestorage.app",
-  messagingSenderId: "200647592456",
-  appId: "1:200647592456:web:2d7353c931c46300935fbd",
-  measurementId: "G-X8J3GNP3HZ"
-};
+      const firebaseConfig = {
+        apiKey: "AIzaSyCGJaFBTsWOJSf-mbohmxFlTycgdMxc0TE",
+        authDomain: "desa-setiamekar-web.firebaseapp.com",
+        projectId: "desa-setiamekar-web",
+        storageBucket: "desa-setiamekar-web.firebasestorage.app",
+        messagingSenderId: "200647592456",
+        appId: "1:200647592456:web:2d7353c931c46300935fbd",
+        measurementId: "G-X8J3GNP3HZ"
+      };
 
-  // Inisialisasi Firebase
+      // Inisialisasi Firebase
       firebase.initializeApp(firebaseConfig);
+
       // Firestore instance global
       window.desaDb = firebase.firestore();
     </script>
 
-    <!-- CSS kita sendiri -->
-    <link rel="stylesheet" href="style.css" />
+    <!-- CSS kita sendiri (SUDAH pakai versi) -->
+    <link rel="stylesheet" href="style.css?v=1.0.0" />
   </head>
+
   <body class="h-full w-full">
     <div id="app-root" class="h-full w-full"></div>
 
-    <!-- JS utama -->
-    <script src="app.js"></script>
+    <!-- JS utama (SUDAH pakai versi) -->
+    <script src="app.js?v=1.0.0"></script>
   </body>
 </html>
