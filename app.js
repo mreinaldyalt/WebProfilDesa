@@ -22,7 +22,7 @@ const defaultConfig = {
   calendar_intro_text:
     "Lihat dan kelola jadwal kegiatan Perumahan sepanjang tahun. Perangkat Perumahan dapat masuk mode edit dengan kata sandi khusus.",
   footer_text:
-    "Perumahan Taman Kebayoran Tambun Selatan • Bersama Membangun Perumahan yang Lebih Baik",
+    "Perumahan Taman Kebayoran Tambun Selatan • Bersama Membangun Lingkungan yang Lebih Baik",
 };
 
 const uiRefs = {
@@ -123,13 +123,17 @@ async function loadState() {
       });
     }
 
-    if (state.calendarEvents && typeof state.calendarEvents === "object") {
+        if (state.calendarEvents && typeof state.calendarEvents === "object") {
+      // kosongkan dulu objek lokal biar gak nyangkut data lama
+      Object.keys(calendarEvents).forEach((k) => delete calendarEvents[k]);
+
       Object.keys(state.calendarEvents).forEach((k) => {
         calendarEvents[k] = Array.isArray(state.calendarEvents[k])
           ? state.calendarEvents[k]
           : [];
       });
     }
+
 
     if (typeof state.isLightTheme === "boolean") {
       isLightTheme = state.isLightTheme;
@@ -149,12 +153,21 @@ async function saveState() {
       return;
     }
 
+    // 🔽 bersihkan calendarEvents: hanya kirim tanggal yang ada kegiatannya
+    const cleanCalendarEvents = {};
+    Object.keys(calendarEvents).forEach((k) => {
+      const arr = calendarEvents[k];
+      if (Array.isArray(arr) && arr.length > 0) {
+        cleanCalendarEvents[k] = arr;
+      }
+    });
+
     const state = {
       heroImageUrl,
       aboutDescription,
       activitiesDescription,
       galleryItems,
-      calendarEvents,
+      calendarEvents: cleanCalendarEvents,
       isLightTheme,
       currentYear,
     };
@@ -163,11 +176,18 @@ async function saveState() {
       .collection(COLLECTION_NAME)
       .doc(DOCUMENT_ID);
 
-    await docRef.set(state, { merge: true });
+    // ⬇️ PENTING: overwrite penuh dokumen, tanpa merge
+    await docRef.set(state);
+
+    // (opsional) debug:
+    // console.log("STATE TERSIMPAN:", state);
   } catch (err) {
     console.error("Gagal save state ke Firestore:", err);
   }
 }
+
+
+
 
 // ===================== UTIL SVG & PATTERN =====================
 function createModernIcon() {
@@ -1924,13 +1944,24 @@ function onCalendarDateClick(year, month, day) {
       "focus-outline px-5 py-2.5 rounded-full font-semibold shadow-lg transition-all hover:scale-105 text-sm";
     saveBtn.textContent = "💾 Simpan";
 
-    const clearBtn = document.createElement("button");
+            const clearBtn = document.createElement("button");
     clearBtn.type = "button";
     clearBtn.className =
       "focus-outline px-4 py-2 rounded-full font-medium shadow-md transition-all hover:scale-105 text-sm";
-    clearBtn.textContent = "🗑️ Hapus Semua";
+    clearBtn.textContent = "🗑️ Hapus Jadwal";
     clearBtn.addEventListener("click", () => {
+      // kosongkan textarea
       textarea.value = "";
+
+      // langsung hapus kegiatan di tanggal ini
+      setEventsForDate(year, month, day, []);
+
+      // simpan ke Firestore
+      saveState();
+
+      // tutup popup dan refresh tampilan kalender
+      host.remove();
+      renderCalendarYear(currentYear);
     });
 
     btnRow.appendChild(saveBtn);
