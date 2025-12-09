@@ -61,7 +61,7 @@ const uiRefs = {
 
 let currentYear = new Date().getFullYear();
 const calendarEvents = {};
-const EDIT_PASSWORD = "KKNUBHARA";
+const EDIT_PASSWORD = "kknubhara";
 let hasEditAccess = false;
 let hasGalleryEditAccess = false;
 let isLightTheme = false;
@@ -179,7 +179,7 @@ async function loadState() {
       });
     }
 
-    // 🔽 load bagian dokumentasi (sections)
+        // 🔽 load bagian dokumentasi (sections)
     if (Array.isArray(state.docSections) && state.docSections.length > 0) {
       docSections = state.docSections
         .filter((s) => s && typeof s.id === "number")
@@ -198,9 +198,30 @@ async function loadState() {
       activeSectionId = docSections[0]?.id || 1;
     }
 
+    // 🔽 BERSIHKAN FOTO YANG SECTION-NYA SUDAH TIDAK ADA
+    if (Array.isArray(galleryItems) && galleryItems.length > 0) {
+      const validSectionIds = new Set(docSections.map((s) => s.id));
+      let removedSomething = false;
+
+      for (let i = galleryItems.length - 1; i >= 0; i--) {
+        const sid = galleryItems[i].sectionId;
+        // kalau sectionId bukan number, atau id-nya tidak ditemukan di docSections → buang
+        if (typeof sid !== "number" || !validSectionIds.has(sid)) {
+          galleryItems.splice(i, 1);
+          removedSomething = true;
+        }
+      }
+
+      // kalau ada yang dibersihkan, langsung simpan state baru (sekali saja)
+      if (removedSomething) {
+        await saveState();
+      }
+    }
+
     if (typeof state.isLightTheme === "boolean") {
       isLightTheme = state.isLightTheme;
     }
+
     if (typeof state.currentYear === "number") {
       currentYear = state.currentYear;
     }
