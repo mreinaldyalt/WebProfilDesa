@@ -17,6 +17,9 @@ const defaultConfig = {
   activities_title: "Kegiatan Rutin Perumahan",
   activities_body:
     "Berbagai kegiatan rutin seperti pengajian mingguan, kerja bakti bulanan, pelatihan UMKM, festival budaya, dan kegiatan pemuda diadakan untuk mempererat kebersamaan dan meningkatkan kesejahteraan warga.",
+
+
+
   gallery_title: "Galeri Kegiatan Perumahan",
   calendar_section_title: "Kalender Kegiatan Tahunan",
   calendar_intro_text:
@@ -69,17 +72,57 @@ let aboutDescription =
 let activitiesDescription =
   "Berbagai kegiatan rutin seperti pengajian mingguan, kerja bakti bulanan, pelatihan UMKM, festival budaya, dan kegiatan pemuda diadakan untuk mempererat kebersamaan dan meningkatkan kesejahteraan warga.";
 
+// ===================== BAGIAN DOKUMENTASI (SECTIONS) =====================
+let docSections = [
+  // default 1 bagian awal (galeri sekarang)
+  { id: 1, title: defaultConfig.gallery_title },
+];
+
+let activeSectionId = 1;
+
+
 // ===================== PERSISTENSI STATE (Firestore) =====================
 const COLLECTION_NAME = "desa_config";
 const DOCUMENT_ID = "global_state";
 
+// semua default masuk ke bagian pertama (id = 1)
 const galleryItems = [
-  { id: 1, imageUrl: "", caption: "Kerja bakti membersihkan lingkungan Perumahan" },
-  { id: 2, imageUrl: "", caption: "Pengajian rutin mingguan bersama warga" },
-  { id: 3, imageUrl: "", caption: "Pelatihan UMKM produk lokal Perumahan" },
-  { id: 4, imageUrl: "", caption: "Perayaan hari besar keagamaan" },
-  { id: 5, imageUrl: "", caption: "Festival budaya dan seni tradisional" },
-  { id: 6, imageUrl: "", caption: "Kegiatan pemuda dan olahraga Perumahan" },
+  {
+    id: 1,
+    sectionId: 1,
+    imageUrl: "",
+    caption: "Kerja bakti membersihkan lingkungan Perumahan",
+  },
+  {
+    id: 2,
+    sectionId: 1,
+    imageUrl: "",
+    caption: "Pengajian rutin mingguan bersama warga",
+  },
+  {
+    id: 3,
+    sectionId: 1,
+    imageUrl: "",
+    caption: "Pelatihan UMKM produk lokal Perumahan",
+  },
+  {
+    id: 4,
+    sectionId: 1,
+    imageUrl: "",
+    caption: "Perayaan hari besar keagamaan",
+  },
+  {
+    id: 5,
+    sectionId: 1,
+    imageUrl: "",
+    caption: "Festival budaya dan seni tradisional",
+  },
+  {
+    id: 6,
+    sectionId: 1,
+    imageUrl: "",
+    caption: "Kegiatan pemuda dan olahraga Perumahan",
+  },
 ];
 
 async function loadState() {
@@ -110,12 +153,14 @@ async function loadState() {
       activitiesDescription = state.activitiesDescription;
     }
 
-    if (Array.isArray(state.galleryItems) && state.galleryItems.length > 0) {
+        if (Array.isArray(state.galleryItems) && state.galleryItems.length > 0) {
       galleryItems.length = 0;
       state.galleryItems.forEach((item) => {
         if (item && typeof item.id === "number") {
           galleryItems.push({
             id: item.id,
+            // 🔽 kalau data lama belum punya sectionId, anggap masuk bagian 1
+            sectionId: typeof item.sectionId === "number" ? item.sectionId : 1,
             imageUrl: item.imageUrl || "",
             caption: item.caption || "",
           });
@@ -123,7 +168,7 @@ async function loadState() {
       });
     }
 
-        if (state.calendarEvents && typeof state.calendarEvents === "object") {
+            if (state.calendarEvents && typeof state.calendarEvents === "object") {
       // kosongkan dulu objek lokal biar gak nyangkut data lama
       Object.keys(calendarEvents).forEach((k) => delete calendarEvents[k]);
 
@@ -134,6 +179,24 @@ async function loadState() {
       });
     }
 
+    // 🔽 load bagian dokumentasi (sections)
+    if (Array.isArray(state.docSections) && state.docSections.length > 0) {
+      docSections = state.docSections
+        .filter((s) => s && typeof s.id === "number")
+        .map((s) => ({
+          id: s.id,
+          title: s.title || "Bagian Tanpa Judul",
+        }));
+    } else {
+      // fallback default satu bagian
+      docSections = [{ id: 1, title: defaultConfig.gallery_title }];
+    }
+
+    if (typeof state.activeSectionId === "number") {
+      activeSectionId = state.activeSectionId;
+    } else {
+      activeSectionId = docSections[0]?.id || 1;
+    }
 
     if (typeof state.isLightTheme === "boolean") {
       isLightTheme = state.isLightTheme;
@@ -141,6 +204,7 @@ async function loadState() {
     if (typeof state.currentYear === "number") {
       currentYear = state.currentYear;
     }
+
   } catch (err) {
     console.error("Gagal load state dari Firestore:", err);
   }
@@ -162,7 +226,7 @@ async function saveState() {
       }
     });
 
-    const state = {
+        const state = {
       heroImageUrl,
       aboutDescription,
       activitiesDescription,
@@ -170,6 +234,10 @@ async function saveState() {
       calendarEvents: cleanCalendarEvents,
       isLightTheme,
       currentYear,
+
+      // 🔽 bagian dokumentasi
+      docSections,
+      activeSectionId,
     };
 
     const docRef = window.desaDb
@@ -603,11 +671,56 @@ heroImageContainer.style.height = heroHeight;
   contentGrid.appendChild(aboutCard);
   contentGrid.appendChild(activitiesCard);
 
-  // gallery section
+    // gallery section
   const gallerySection = document.createElement("section");
   gallerySection.className = "fade-up fade-up-delay-3";
   gallerySection.setAttribute("aria-labelledby", "gallery-title");
 
+  // 🔽 BAR BAGIAN DOKUMENTASI
+  const sectionManager = document.createElement("div");
+  sectionManager.id = "section-manager";
+  sectionManager.className = "mb-4 flex flex-col gap-3";
+
+  const sectionRow = document.createElement("div");
+  sectionRow.className = "flex flex-wrap items-center gap-2";
+
+  const sectionLabel = document.createElement("p");
+  sectionLabel.className = "text-sm font-semibold";
+  sectionLabel.textContent = "Bagian Dokumentasi:";
+
+  const sectionButtonsWrap = document.createElement("div");
+  sectionButtonsWrap.id = "section-buttons-wrap";
+  sectionButtonsWrap.className = "flex flex-wrap items-center gap-2";
+
+  sectionRow.appendChild(sectionLabel);
+  sectionRow.appendChild(sectionButtonsWrap);
+
+  const sectionAdminRow = document.createElement("div");
+  sectionAdminRow.id = "section-admin-row";
+  sectionAdminRow.className =
+    "hidden flex flex-wrap items-center gap-2";
+
+  const addSectionBtn = document.createElement("button");
+  addSectionBtn.id = "add-section-btn";
+  addSectionBtn.type = "button";
+  addSectionBtn.className =
+    "focus-outline px-4 py-2 rounded-full text-xs md:text-sm font-medium shadow-md transition-all hover:scale-105";
+  addSectionBtn.textContent = "➕ Tambah Bagian";
+
+  const deleteSectionBtn = document.createElement("button");
+  deleteSectionBtn.id = "delete-section-btn";
+  deleteSectionBtn.type = "button";
+  deleteSectionBtn.className =
+    "focus-outline px-4 py-2 rounded-full text-xs md:text-sm font-medium shadow-md transition-all hover:scale-105";
+  deleteSectionBtn.textContent = "🗑️ Hapus Bagian Ini";
+
+  sectionAdminRow.appendChild(addSectionBtn);
+  sectionAdminRow.appendChild(deleteSectionBtn);
+
+  sectionManager.appendChild(sectionRow);
+  sectionManager.appendChild(sectionAdminRow);
+
+  // header galeri
   const galleryHeader = document.createElement("div");
   galleryHeader.className = "flex items-center gap-3 mb-6";
 
@@ -627,12 +740,15 @@ heroImageContainer.style.height = heroHeight;
   galleryContainer.id = "gallery-container";
   galleryContainer.className = "grid grid-cols-1 md:grid-cols-3 gap-6";
 
+  // susunan dalam section
+  gallerySection.appendChild(sectionManager);
   gallerySection.appendChild(galleryHeader);
   gallerySection.appendChild(galleryContainer);
 
   profileSection.appendChild(heroImageContainer);
   profileSection.appendChild(contentGrid);
   profileSection.appendChild(gallerySection);
+
 
   // calendar section
   const calendarSection = document.createElement("section");
@@ -822,7 +938,7 @@ heroImageContainer.style.height = heroHeight;
   uiRefs.aboutBody = aboutBody;
   uiRefs.activitiesTitle = activitiesTitle;
   uiRefs.activitiesBody = activitiesBody;
-  uiRefs.galleryTitle = galleryTitle;
+    uiRefs.galleryTitle = galleryTitle;
   uiRefs.footerText = footerText;
   uiRefs.profileNavBtn = profileBtn;
   uiRefs.calendarNavBtn = calendarBtn;
@@ -835,6 +951,12 @@ heroImageContainer.style.height = heroHeight;
   uiRefs.calendarPrevYearBtn = yearPrev;
   uiRefs.calendarNextYearBtn = yearNext;
 
+  // 🔽 referensi section manager
+  uiRefs.sectionButtonsWrap = sectionButtonsWrap;
+  uiRefs.sectionAdminRow = sectionAdminRow;
+  uiRefs.addSectionBtn = addSectionBtn;
+  uiRefs.deleteSectionBtn = deleteSectionBtn;
+
   // 🔽 referensi mobile nav
   uiRefs.mobileNavFab = mobileNavFab;
   uiRefs.mobileNavOverlay = mobileNavOverlay;
@@ -843,10 +965,15 @@ heroImageContainer.style.height = heroHeight;
   uiRefs.mobileProfileLink = mobileProfileBtn;
   uiRefs.mobileCalendarLink = mobileCalendarBtn;
 
-  setupInteractions();
+    setupInteractions();
   setupScrollAnimations();
   renderGallery();
   renderCalendarYear(currentYear);
+
+  // 🔽 render bagian dokumentasi pertama kali
+  if (typeof renderDocSections === "function") {
+    renderDocSections();
+  }
 }
 
 
@@ -873,7 +1000,16 @@ function renderGallery() {
   if (!uiRefs.galleryContainer) return;
   uiRefs.galleryContainer.innerHTML = "";
 
-  galleryItems.forEach((item, index) => {
+  // 🔽 tentukan section aktif (fallback ke pertama kalau null)
+  const currentSectionId =
+    activeSectionId || (docSections[0] && docSections[0].id) || 1;
+
+  // 🔽 filter foto berdasarkan sectionId
+  const itemsForSection = galleryItems.filter(
+    (item) => item.sectionId === currentSectionId
+  );
+
+  itemsForSection.forEach((item, index) => {
     const itemDiv = document.createElement("div");
     itemDiv.className =
       "rounded-2xl overflow-hidden shadow-xl group relative";
@@ -916,7 +1052,7 @@ function renderGallery() {
     const caption = document.createElement("p");
     caption.className = "w-full text-sm px-5 py-4 text-white font-medium";
     caption.textContent = item.caption;
-        captionWrap.appendChild(caption);
+    captionWrap.appendChild(caption);
 
     if (hasGalleryEditAccess) {
       const editControls = document.createElement("div");
@@ -944,22 +1080,20 @@ function renderGallery() {
 
     itemDiv.appendChild(captionWrap);
 
-    // ⬇️ TAMBAHAN BARU: klik kartu = preview gambar
+    // klik kartu = preview (kecuali tombol edit/hapus)
     itemDiv.addEventListener("click", (e) => {
-      // Kalau lagi mode edit dan yang diklik tombol Edit/Hapus, jangan buka popup
       if (hasGalleryEditAccess && e.target.closest("button")) {
         return;
       }
-
       if (item.imageUrl) {
         openImagePreview(item.imageUrl, item.caption);
       }
     });
-    // ⬆️ TAMBAHAN BARU
 
     uiRefs.galleryContainer.appendChild(itemDiv);
   });
 
+  // kalau admin & tidak ada foto pun, tetap tampil tombol Tambah
   if (hasGalleryEditAccess) {
     const addNewDiv = document.createElement("div");
     addNewDiv.className =
@@ -1247,24 +1381,34 @@ function addNewGalleryItem() {
   form.appendChild(textarea);
   form.appendChild(submit);
 
-  form.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const caption = textarea.value.trim();
-  const imageUrl = urlInput.value.trim();
+    form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const caption = textarea.value.trim();
+    const imageUrl = urlInput.value.trim();
 
-  // Minimal salah satu terisi: URL foto atau keterangan
-  if (!caption && !imageUrl) {
-    alert("Isi URL foto atau keterangan dulu salah satu ya 🙂");
-    return;
-  }
+    // Minimal salah satu terisi: URL foto atau keterangan
+    if (!caption && !imageUrl) {
+      alert("Isi URL foto atau keterangan dulu salah satu ya 🙂");
+      return;
+    }
 
-  const newId = Math.max(...galleryItems.map((i) => i.id), 0) + 1;
-  galleryItems.push({ id: newId, imageUrl, caption });
-  host.remove();
-  renderGallery();
-  saveState();
-});
+    const newId = Math.max(...galleryItems.map((i) => i.id), 0) + 1;
 
+    // 🔽 tentukan section yang dipakai (section aktif)
+    const currentSectionId =
+      activeSectionId || (docSections[0] && docSections[0].id) || 1;
+
+    galleryItems.push({
+      id: newId,
+      sectionId: currentSectionId,
+      imageUrl,
+      caption,
+    });
+
+    host.remove();
+    renderGallery();
+    saveState();
+  });
 
   panel.appendChild(titleRow);
   panel.appendChild(form);
@@ -1944,7 +2088,7 @@ function onCalendarDateClick(year, month, day) {
       "focus-outline px-5 py-2.5 rounded-full font-semibold shadow-lg transition-all hover:scale-105 text-sm";
     saveBtn.textContent = "💾 Simpan";
 
-            const clearBtn = document.createElement("button");
+                const clearBtn = document.createElement("button");
     clearBtn.type = "button";
     clearBtn.className =
       "focus-outline px-4 py-2 rounded-full font-medium shadow-md transition-all hover:scale-105 text-sm";
@@ -1953,7 +2097,7 @@ function onCalendarDateClick(year, month, day) {
       // kosongkan textarea
       textarea.value = "";
 
-      // langsung hapus kegiatan di tanggal ini
+      // langsung hapus kegiatan di tanggal ini (array kosong)
       setEventsForDate(year, month, day, []);
 
       // simpan ke Firestore
@@ -2218,13 +2362,13 @@ function setupInteractions() {
     setActiveMenu("calendar")
   );
 
-  const editGalleryBtn = document.getElementById("edit-gallery-toggle");
+    const editGalleryBtn = document.getElementById("edit-gallery-toggle");
   editGalleryBtn.addEventListener("click", () => {
     if (!hasGalleryEditAccess) {
       showPasswordPrompt((success) => {
         if (success) {
           hasGalleryEditAccess = true;
-          editGalleryBtn.textContent = "🔓 Keluar Mode Edit";
+          editGalleryBtn.textContent = "🔓 Mode Edit";
 
           const heroContainer = document.getElementById("hero-image-container");
           if (heroContainer) {
@@ -2256,6 +2400,9 @@ function setupInteractions() {
           }
 
           renderGallery();
+          if (typeof onGalleryEditModeChange === "function") {
+            onGalleryEditModeChange(true);
+          }
         }
       });
     } else {
@@ -2272,8 +2419,12 @@ function setupInteractions() {
       if (actEditBtn) actEditBtn.classList.add("hidden");
 
       renderGallery();
+      if (typeof onGalleryEditModeChange === "function") {
+        onGalleryEditModeChange(false);
+      }
     }
   });
+
 
   const editToggleBtn = document.getElementById("calendar-edit-toggle");
   editToggleBtn.addEventListener("click", () => {
@@ -2338,7 +2489,7 @@ function setupInteractions() {
     });
   }
 
-  if (uiRefs.mobileCalendarLink) {
+    if (uiRefs.mobileCalendarLink) {
     uiRefs.mobileCalendarLink.addEventListener("click", () => {
       setActiveMenu("calendar");
       closeMobileNav();
@@ -2349,7 +2500,15 @@ function setupInteractions() {
     });
   }
 
-    // === MOBILE NAV: FAB + behaviour scroll ===
+  // === BAGIAN DOKUMENTASI (delegasi ke menu.js) ===
+  if (uiRefs.addSectionBtn) {
+    uiRefs.addSectionBtn.addEventListener("click", addNewSection);
+  }
+  if (uiRefs.deleteSectionBtn) {
+    uiRefs.deleteSectionBtn.addEventListener("click", deleteCurrentSection);
+  }
+
+  // === MOBILE NAV: FAB + behaviour scroll ===
   const isMobile = () => window.innerWidth < 768;
 
   const updateMobileNavFab = () => {
