@@ -108,26 +108,41 @@ function deleteCurrentSection() {
   if (!current) return;
 
   const ok = confirm(
-    `Yakin ingin menghapus bagian "${current.title}"?`
+    `Yakin ingin menghapus bagian "${current.title}" beserta semua foto di dalamnya?`
   );
   if (!ok) return;
 
-    docSections = docSections.filter((s) => s.id !== activeSectionId);
+  const removedId = current.id;
 
+  // 🔽 1) hapus bagian dari daftar section
+  docSections = docSections.filter((s) => s.id !== removedId);
+
+  // 🔽 2) hapus SEMUA foto yang punya sectionId = bagian ini
+  if (Array.isArray(galleryItems) && galleryItems.length > 0) {
+    for (let i = galleryItems.length - 1; i >= 0; i--) {
+      if (galleryItems[i].sectionId === removedId) {
+        galleryItems.splice(i, 1);
+      }
+    }
+  }
+
+  // 🔽 3) atur activeSectionId baru
   if (docSections.length > 0) {
     activeSectionId = docSections[0].id;
   } else {
     activeSectionId = null;
   }
 
+  // 🔽 4) refresh tampilan
   renderDocSections();
-
   if (typeof renderGallery === "function") {
     renderGallery();
   }
 
+  // 🔽 5) simpan ke Firestore (state sudah bersih)
   saveState();
 }
+
 
 
 // Dipanggil dari app.js ketika mode edit galeri ON/OFF
