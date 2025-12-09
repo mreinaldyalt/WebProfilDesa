@@ -10,7 +10,7 @@ const defaultConfig = {
 
   header_title: "Perumahan Taman Kebayoran Tambun Selatan",
   header_subtitle:
-    "Perumahan Taman Kebayoran RW 13 , Kec. Tambun Selatan, Kab. Bekasi",
+    "Perumahan Taman Kebayoran RW 13, Kec. Tambun Selatan, Kab. Bekasi",
   about_title: "Tentang Perumahan Kami",
   about_body:
     "Perumahan Taman Kebayoran Tambun Selatan adalah Perumahan yang terletak di wilayah strategis dengan akses mudah namun tetap mempertahankan suasana pedesaan yang asri. Masyarakat kami menjunjung tinggi nilai-nilai gotong royong, kearifan lokal, dan keagamaan yang kuat.",
@@ -51,14 +51,18 @@ const uiRefs = {
   calendarNextYearBtn: null,
 
   // 🔽 tambahan untuk mobile menu
-    mobileNavFab: null,
+      mobileNavFab: null,
   mobileNavOverlay: null,
   mobileNavPanel: null,
   mobileNavThreshold: 0,
   mobileProfileLink: null,
   mobileCalendarLink: null,
   mobileEditLink: null, // 🔽 tombol "Mode Edit" di menu melayang HP
+
+  // 🔽 FAB untuk toggle tema di HP
+  mobileThemeFab: null,
 };
+
 
 let currentYear = new Date().getFullYear();
 const EDIT_PASSWORD = "kknubhara";
@@ -500,27 +504,32 @@ header.className =
 
   const navInner = document.createElement("div");
 navInner.className =
-  "max-w-7xl mx-auto px-4 py-3 md:px-6 md:py-5 flex items-center justify-between gap-3 md:gap-4";
-
+  // padding & gap di-press sedikit
+  "max-w-7xl mx-auto px-4 py-2 md:px-6 md:py-4 flex items-center justify-between gap-2 md:gap-4";
 
   const brandWrap = document.createElement("div");
   brandWrap.className = "flex items-center gap-4";
 
-    const iconWrap = document.createElement("div");
+      const iconWrap = document.createElement("div");
   iconWrap.className =
-    "rounded-full p-1 bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center shadow-lg float-animation relative overflow-hidden";
+    // kasih ukuran fix biar bener-bener bulat
+    "w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center shadow-lg float-animation relative overflow-hidden";
 
   // 🔽 IMG LOGO (kalau user upload)
   const logoImg = document.createElement("img");
   logoImg.id = "desa-logo-img";
   logoImg.className =
-    "w-10 h-10 md:w-12 md:h-12 rounded-full object-cover hidden";
+    // selalu isi penuh lingkaran tapi tetap jaga rasio
+    "w-full h-full rounded-full object-contain hidden";
   logoImg.alt = "Logo Perumahan";
   iconWrap.appendChild(logoImg);
 
   // 🔽 ICON DEFAULT (kalau belum ada logo)
   const defaultIcon = createModernIcon();
   defaultIcon.id = "desa-logo-default";
+  // samakan ukurannya dengan container
+  defaultIcon.classList.remove("w-12", "h-12");
+  defaultIcon.classList.add("w-full", "h-full");
   iconWrap.appendChild(defaultIcon);
 
   // 🔽 klik bulatan ini untuk ganti logo (hanya saat mode edit)
@@ -535,14 +544,15 @@ navInner.className =
   brandText.className = "flex flex-col";
 
   const titleEl = document.createElement("h1");
-  titleEl.id = "header-title";
-  titleEl.className = "text-xl md:text-2xl font-bold tracking-tight fade-up";
-  titleEl.textContent = defaultConfig.header_title;
+titleEl.id = "header-title";
+titleEl.className =
+  "text-lg md:text-2xl font-bold tracking-tight leading-snug fade-up";
 
-  const subtitleEl = document.createElement("p");
-  subtitleEl.id = "header-subtitle";
-  subtitleEl.className =
-    "text-sm md:text-base opacity-90 mt-1 max-w-2xl fade-up fade-up-delay-1";
+const subtitleEl = document.createElement("p");
+subtitleEl.id = "header-subtitle";
+subtitleEl.className =
+  "text-xs md:text-base opacity-90 mt-0.5 max-w-2xl leading-snug fade-up fade-up-delay-1";
+
   subtitleEl.textContent = defaultConfig.header_subtitle;
 
   brandText.appendChild(titleEl);
@@ -555,10 +565,11 @@ navInner.className =
 themeToggle.id = "theme-toggle";
 themeToggle.type = "button";
 themeToggle.className =
-  "focus-outline px-4 py-2 md:px-5 md:py-2.5 rounded-full font-semibold shadow-lg transition-all duration-300 hover:scale-105 text-xs md:text-sm";
+  // disembunyikan di HP, tampil di md ke atas
+  "hidden md:inline-flex focus-outline px-4 py-2 md:px-5 md:py-2.5 rounded-full font-semibold shadow-lg transition-all duration-300 hover:scale-105 text-xs md:text-sm";
 
   themeToggle.setAttribute("aria-label", "Ganti tema terang/gelap");
-  themeToggle.textContent = "🌙 Mode Terang";
+themeToggle.textContent = "🌙 Mode Terang";
 
   navInner.appendChild(brandWrap);
   navInner.appendChild(themeToggle);
@@ -1009,7 +1020,7 @@ heroImageContainer.style.height = heroHeight;
   mobileNavOverlay.appendChild(mobileNavPanel);
   wrapper.appendChild(mobileNavOverlay);
 
-  // Tombol bulat “☰ Menu” di pojok kiri atas (hanya HP)
+    // Tombol bulat “☰ Menu” di pojok kiri atas (hanya HP)
   const mobileNavFab = document.createElement("button");
   mobileNavFab.id = "mobile-nav-fab";
   mobileNavFab.type = "button";
@@ -1018,6 +1029,17 @@ heroImageContainer.style.height = heroHeight;
   mobileNavFab.innerHTML =
     "<span class='text-base'>☰</span><span>Menu</span>";
   wrapper.appendChild(mobileNavFab);
+
+  // 🔥 FAB untuk toggle tema (pojok kanan atas, ikut scroll, hanya HP)
+  const mobileThemeFab = document.createElement("button");
+  mobileThemeFab.id = "mobile-theme-fab";
+  mobileThemeFab.type = "button";
+  mobileThemeFab.className =
+    "fixed right-4 top-4 z-40 md:hidden px-3 py-2 rounded-full shadow-lg text-xs font-semibold flex items-center justify-center";
+  mobileThemeFab.setAttribute("aria-label", "Ganti tema terang/gelap");
+  // isi awal icon-nya, nanti di-update lagi di JS
+  mobileThemeFab.textContent = "🌙";
+  wrapper.appendChild(mobileThemeFab);
 
   // baru kita tempel ke root
   root.appendChild(wrapper);
@@ -1056,13 +1078,14 @@ heroImageContainer.style.height = heroHeight;
   uiRefs.deleteSectionBtn = deleteSectionBtn;
 
   // 🔽 referensi mobile nav
-    uiRefs.mobileNavFab = mobileNavFab;
+      uiRefs.mobileNavFab = mobileNavFab;
   uiRefs.mobileNavOverlay = mobileNavOverlay;
   uiRefs.mobileNavPanel = mobileNavPanel;
   uiRefs.mobileNavThreshold = header.offsetHeight || 240; // titik scroll kira-kira
   uiRefs.mobileProfileLink = mobileProfileBtn;
   uiRefs.mobileCalendarLink = mobileCalendarBtn;
   uiRefs.mobileEditLink = mobileEditBtn; // 🔽 simpan referensi tombol Mode Edit
+  uiRefs.mobileThemeFab = mobileThemeFab;
 
     setupInteractions();
   setupScrollAnimations();
@@ -2684,8 +2707,21 @@ function getScrollY() {
 // ===================== INTERAKSI GLOBAL =====================
 
 function setupInteractions() {
-  uiRefs.themeToggle.addEventListener("click", () => {
+  // helper: update label tombol tema (desktop & mobile)
+  function updateThemeButtonsLabel() {
+    if (uiRefs.themeToggle) {
+      uiRefs.themeToggle.textContent = isLightTheme
+        ? "🌙 Mode Gelap"   // aksi berikutnya: ke gelap
+        : "☀️ Mode Terang"; // aksi berikutnya: ke terang
+    }
+    if (uiRefs.mobileThemeFab) {
+      uiRefs.mobileThemeFab.textContent = isLightTheme ? "🌙" : "☀️";
+    }
+  }
+
+  function toggleTheme() {
     isLightTheme = !isLightTheme;
+
     if (isLightTheme) {
       const lightConfig = {
         background_color: "#f0f4f8",
@@ -2695,7 +2731,6 @@ function setupInteractions() {
         secondary_action_color: "#3b82f6",
       };
       Object.assign(defaultConfig, lightConfig);
-      uiRefs.themeToggle.textContent = "🌙 Mode Gelap";
     } else {
       const darkConfig = {
         background_color: "#0f172a",
@@ -2705,12 +2740,25 @@ function setupInteractions() {
         secondary_action_color: "#3b82f6",
       };
       Object.assign(defaultConfig, darkConfig);
-      uiRefs.themeToggle.textContent = "☀️ Mode Terang";
     }
+
+    updateThemeButtonsLabel();
     applyTheme(defaultConfig);
     renderCalendarYear(currentYear);
     saveState();
-  });
+  }
+
+  // klik tombol tema (desktop)
+  if (uiRefs.themeToggle) {
+    uiRefs.themeToggle.addEventListener("click", toggleTheme);
+  }
+  // klik tombol tema FAB di HP
+  if (uiRefs.mobileThemeFab) {
+    uiRefs.mobileThemeFab.addEventListener("click", toggleTheme);
+  }
+
+  // panggil sekali di awal
+  updateThemeButtonsLabel();
 
   uiRefs.profileNavBtn.addEventListener("click", () =>
     setActiveMenu("profile")
@@ -2948,7 +2996,7 @@ async function initElementSdk() {
     buildStaticLayout();
 
     // pakai tema terakhir yang tersimpan
-    if (isLightTheme) {
+        if (isLightTheme) {
       const lightConfig = {
         background_color: "#f0f4f8",
         surface_color: "#ffffff",
@@ -2957,7 +3005,8 @@ async function initElementSdk() {
         secondary_action_color: "#3b82f6",
       };
       Object.assign(defaultConfig, lightConfig);
-      uiRefs.themeToggle.textContent = "🌙 Mode Gelap";
+      if (uiRefs.themeToggle) uiRefs.themeToggle.textContent = "🌙 Mode Gelap";
+      if (uiRefs.mobileThemeFab) uiRefs.mobileThemeFab.textContent = "🌙";
     } else {
       const darkConfig = {
         background_color: "#0f172a",
@@ -2967,7 +3016,8 @@ async function initElementSdk() {
         secondary_action_color: "#3b82f6",
       };
       Object.assign(defaultConfig, darkConfig);
-      uiRefs.themeToggle.textContent = "☀️ Mode Terang";
+      if (uiRefs.themeToggle) uiRefs.themeToggle.textContent = "☀️ Mode Terang";
+      if (uiRefs.mobileThemeFab) uiRefs.mobileThemeFab.textContent = "☀️";
     }
 
         applyTheme(defaultConfig);
