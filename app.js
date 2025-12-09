@@ -330,9 +330,9 @@ function buildStaticLayout() {
   wrapper.appendChild(grassContainer);
 
   // ===== HEADER =====
-  const header = document.createElement("header");
-  header.className =
-    "w-full sticky top-0 z-10 backdrop-blur-md bg-opacity-90 shadow-lg";
+const header = document.createElement("header");
+header.className =
+  "w-full z-10 backdrop-blur-md bg-opacity-90 shadow-lg md:sticky md:top-0";
 
   const navBar = document.createElement("nav");
   navBar.className = "w-full border-b border-yellow-500/20";
