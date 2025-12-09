@@ -44,8 +44,9 @@ const uiRefs = {
   calendarSectionTitle: null,
   themeToggle: null,
   galleryContainer: null,
-  calendarIntro: null,
+    calendarIntro: null,
   calendarYearLabel: null,
+  calendarMonthSelect: null,   // 🔽 baru
   calendarGridContainer: null,
   calendarPrevYearBtn: null,
   calendarNextYearBtn: null,
@@ -63,8 +64,9 @@ const uiRefs = {
   mobileThemeFab: null,
 };
 
-
 let currentYear = new Date().getFullYear();
+// bulan sekarang (0 = Januari, 11 = Desember)
+let currentMonth = new Date().getMonth();
 const EDIT_PASSWORD = "kknubhara";
 let hasEditAccess = false;
 let hasGalleryEditAccess = false;
@@ -265,13 +267,18 @@ async function loadState() {
       }
     }
 
-    if (typeof state.isLightTheme === "boolean") {
+        if (typeof state.isLightTheme === "boolean") {
       isLightTheme = state.isLightTheme;
     }
 
     if (typeof state.currentYear === "number") {
       currentYear = state.currentYear;
     }
+
+    if (typeof state.currentMonth === "number") {
+      currentMonth = state.currentMonth;
+    }
+
 
   } catch (err) {
     console.error("Gagal load state dari Firestore:", err);
@@ -300,13 +307,15 @@ async function saveState() {
       aboutDescription,
       activitiesDescription,
       galleryItems,
-      calendarEvents: cleanCalendarEvents,
+            calendarEvents: cleanCalendarEvents,
       isLightTheme,
       currentYear,
+      currentMonth,   // 🔽 simpan bulan terakhir
 
       // 🔽 bagian dokumentasi
       docSections,
       activeSectionId,
+
     };
 
     const docRef = window.desaDb
@@ -880,7 +889,7 @@ heroImageContainer.style.height = heroHeight;
   calTitleBlock.appendChild(calIcon);
   calTitleBlock.appendChild(calTextBlock);
 
-  const calControls = document.createElement("div");
+    const calControls = document.createElement("div");
   calControls.className = "flex flex-wrap items-center gap-3";
 
   const yearPrev = document.createElement("button");
@@ -900,6 +909,21 @@ heroImageContainer.style.height = heroHeight;
   yearLabel.setAttribute("max", "3000");
   yearLabel.setAttribute("aria-label", "Pilih tahun kalender");
 
+  // 🔽 SELECT BULAN (khusus HP, di desktop bisa ikut tampil juga kalau mau)
+  const monthSelect = document.createElement("select");
+  monthSelect.id = "calendar-month-select";
+  monthSelect.className =
+    "block md:hidden px-3 py-2 rounded-full text-xs font-medium shadow-md border";
+  monthSelect.setAttribute("aria-label", "Pilih bulan");
+
+  monthNames.forEach((name, idx) => {
+    const opt = document.createElement("option");
+    opt.value = String(idx);        // 0–11
+    opt.textContent = name;
+    monthSelect.appendChild(opt);
+  });
+  monthSelect.value = String(currentMonth);
+
   const yearNext = document.createElement("button");
   yearNext.id = "calendar-next-year";
   yearNext.type = "button";
@@ -916,8 +940,10 @@ heroImageContainer.style.height = heroHeight;
 
   calControls.appendChild(yearPrev);
   calControls.appendChild(yearLabel);
+  calControls.appendChild(monthSelect); // 🔽 tambahkan di sini
   calControls.appendChild(yearNext);
   calControls.appendChild(editButton);
+
 
   calHeader.appendChild(calTitleBlock);
   calHeader.appendChild(calControls);
@@ -1065,11 +1091,13 @@ heroImageContainer.style.height = heroHeight;
   uiRefs.calendarSectionTitle = calTitle;
   uiRefs.themeToggle = themeToggle;
   uiRefs.galleryContainer = galleryContainer;
-  uiRefs.calendarIntro = calIntro;
+    uiRefs.calendarIntro = calIntro;
   uiRefs.calendarYearLabel = yearLabel;
+  uiRefs.calendarMonthSelect = monthSelect;      // 🔽 baru
   uiRefs.calendarGridContainer = calendarGridContainer;
   uiRefs.calendarPrevYearBtn = yearPrev;
   uiRefs.calendarNextYearBtn = yearNext;
+
 
   // 🔽 referensi section manager
   uiRefs.sectionButtonsWrap = sectionButtonsWrap;
@@ -2233,10 +2261,104 @@ function setEventsForDate(year, month, day, events) {
   }
 }
 
+// 🔽 render satu kartu bulan
+function renderMonthCard(year, month) {
+  const monthCard = document.createElement("div");
+  monthCard.className =
+    "calendar-month-card rounded-2xl p-5 shadow-xl relative overflow-hidden";
+
+  const monthHeader = document.createElement("div");
+  monthHeader.className =
+    "flex items-center justify-between mb-4 relative z-10";
+
+  const monthNameWrap = document.createElement("div");
+  monthNameWrap.className = "flex items-center gap-2";
+
+  const monthIcon = document.createElement("span");
+  monthIcon.className = "text-xl";
+  const icons = ["🌙", "🌸", "🌱", "🌼", "☀️", "🌻", "🌾", "🍂", "🍁", "🌰", "❄️", "⛄"];
+  monthIcon.textContent = icons[month];
+
+  const mName = document.createElement("p");
+  mName.className = "text-base font-bold uppercase tracking-wide";
+  mName.textContent = monthNames[month];
+
+  monthNameWrap.appendChild(monthIcon);
+  monthNameWrap.appendChild(mName);
+
+  const countLabel = document.createElement("span");
+  countLabel.className = "text-xs px-3 py-1 rounded-full font-semibold";
+  let countEvents = 0;
+  Object.keys(calendarEvents).forEach((k) => {
+    if (k.startsWith(`${year}-${String(month + 1).padStart(2, "0")}-`)) {
+      countEvents += calendarEvents[k].length;
+    }
+  });
+  countLabel.textContent =
+    countEvents > 0 ? `${countEvents} kegiatan` : "Kosong";
+
+  monthHeader.appendChild(monthNameWrap);
+  monthHeader.appendChild(countLabel);
+
+  const weekRow = document.createElement("div");
+  weekRow.className =
+    "grid grid-cols-7 gap-1 text-xs font-semibold mb-2 opacity-70";
+  ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].forEach((d) => {
+    const w = document.createElement("div");
+    w.className = "text-center";
+    w.textContent = d;
+    weekRow.appendChild(w);
+  });
+
+  const daysGrid = document.createElement("div");
+  daysGrid.className = "grid grid-cols-7 gap-1.5";
+
+  const firstDay = new Date(year, month, 1);
+  let startIndex = firstDay.getDay();
+  if (startIndex === 0) startIndex = 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  for (let i = 1; i < startIndex; i++) {
+    const empty = document.createElement("div");
+    empty.className = "h-9";
+    daysGrid.appendChild(empty);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateBtn = document.createElement("button");
+    dateBtn.type = "button";
+    dateBtn.className =
+      "focus-outline h-9 rounded-lg text-xs font-medium flex items-center justify-center transition-all duration-300 hover:scale-110";
+    dateBtn.setAttribute("data-year", year.toString());
+    dateBtn.setAttribute("data-month", month.toString());
+    dateBtn.setAttribute("data-day", day.toString());
+
+    const hasEvents = getEventsForDate(year, month, day).length > 0;
+    if (hasEvents) {
+      dateBtn.classList.add("ring-2", "font-bold");
+    }
+
+    dateBtn.textContent = day.toString();
+
+    dateBtn.addEventListener("click", () => {
+      onCalendarDateClick(year, month, day);
+    });
+
+    daysGrid.appendChild(dateBtn);
+  }
+
+  monthCard.appendChild(monthHeader);
+  monthCard.appendChild(weekRow);
+  monthCard.appendChild(daysGrid);
+
+  return monthCard;
+}
+
 function renderCalendarYear(year) {
   if (!uiRefs.calendarGridContainer) return;
   uiRefs.calendarGridContainer.innerHTML = "";
 
+  // update label tahun
   if (uiRefs.calendarYearLabel) {
     if (uiRefs.calendarYearLabel.tagName === "INPUT") {
       uiRefs.calendarYearLabel.value = year.toString();
@@ -2245,94 +2367,23 @@ function renderCalendarYear(year) {
     }
   }
 
-  for (let month = 0; month < 12; month++) {
-    const monthCard = document.createElement("div");
-    monthCard.className =
-      "calendar-month-card rounded-2xl p-5 shadow-xl relative overflow-hidden";
+  // kalau ada select bulan, sync value-nya
+  if (uiRefs.calendarMonthSelect) {
+    uiRefs.calendarMonthSelect.value = String(currentMonth);
+  }
 
-    const monthHeader = document.createElement("div");
-    monthHeader.className =
-      "flex items-center justify-between mb-4 relative z-10";
+  const isMobile = window.innerWidth < 768;
 
-    const monthNameWrap = document.createElement("div");
-    monthNameWrap.className = "flex items-center gap-2";
-
-    const monthIcon = document.createElement("span");
-    monthIcon.className = "text-xl";
-    const icons = ["🌙", "🌸", "🌱", "🌼", "☀️", "🌻", "🌾", "🍂", "🍁", "🌰", "❄️", "⛄"];
-    monthIcon.textContent = icons[month];
-
-    const mName = document.createElement("p");
-    mName.className = "text-base font-bold uppercase tracking-wide";
-    mName.textContent = monthNames[month];
-
-    monthNameWrap.appendChild(monthIcon);
-    monthNameWrap.appendChild(mName);
-
-    const countLabel = document.createElement("span");
-    countLabel.className = "text-xs px-3 py-1 rounded-full font-semibold";
-    let countEvents = 0;
-    Object.keys(calendarEvents).forEach((k) => {
-      if (k.startsWith(`${year}-${String(month + 1).padStart(2, "0")}-`)) {
-        countEvents += calendarEvents[k].length;
-      }
-    });
-    countLabel.textContent = countEvents > 0 ? `${countEvents} kegiatan` : "Kosong";
-
-    monthHeader.appendChild(monthNameWrap);
-    monthHeader.appendChild(countLabel);
-
-    const weekRow = document.createElement("div");
-    weekRow.className =
-      "grid grid-cols-7 gap-1 text-xs font-semibold mb-2 opacity-70";
-    ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].forEach((d) => {
-      const w = document.createElement("div");
-      w.className = "text-center";
-      w.textContent = d;
-      weekRow.appendChild(w);
-    });
-
-    const daysGrid = document.createElement("div");
-    daysGrid.className = "grid grid-cols-7 gap-1.5";
-
-    const firstDay = new Date(year, month, 1);
-    let startIndex = firstDay.getDay();
-    if (startIndex === 0) startIndex = 7;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    for (let i = 1; i < startIndex; i++) {
-      const empty = document.createElement("div");
-      empty.className = "h-9";
-      daysGrid.appendChild(empty);
-    }
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateBtn = document.createElement("button");
-      dateBtn.type = "button";
-      dateBtn.className =
-        "focus-outline h-9 rounded-lg text-xs font-medium flex items-center justify-center transition-all duration-300 hover:scale-110";
-      dateBtn.setAttribute("data-year", year.toString());
-      dateBtn.setAttribute("data-month", month.toString());
-      dateBtn.setAttribute("data-day", day.toString());
-
-      const hasEvents = getEventsForDate(year, month, day).length > 0;
-      if (hasEvents) {
-        dateBtn.classList.add("ring-2", "font-bold");
-      }
-
-      dateBtn.textContent = day.toString();
-
-      dateBtn.addEventListener("click", () => {
-        onCalendarDateClick(year, month, day);
-      });
-
-      daysGrid.appendChild(dateBtn);
-    }
-
-    monthCard.appendChild(monthHeader);
-    monthCard.appendChild(weekRow);
-    monthCard.appendChild(daysGrid);
+  if (isMobile) {
+    // 🔽 HP: cuma tampilkan 1 bulan (currentMonth)
+    const monthCard = renderMonthCard(year, currentMonth);
     uiRefs.calendarGridContainer.appendChild(monthCard);
+  } else {
+    // 🔽 Desktop/Tablet: 12 bulan penuh
+    for (let month = 0; month < 12; month++) {
+      const monthCard = renderMonthCard(year, month);
+      uiRefs.calendarGridContainer.appendChild(monthCard);
+    }
   }
 
   const configNow = window.elementSdk ? window.elementSdk.config : defaultConfig;
@@ -2883,6 +2934,18 @@ function setupInteractions() {
     saveState();
   });
 
+  // 🔽 pilih bulan (khususnya untuk HP)
+  if (uiRefs.calendarMonthSelect) {
+    uiRefs.calendarMonthSelect.addEventListener("change", () => {
+      const value = parseInt(uiRefs.calendarMonthSelect.value, 10);
+      if (!isNaN(value) && value >= 0 && value <= 11) {
+        currentMonth = value;
+        renderCalendarYear(currentYear);
+        saveState();
+      }
+    });
+  }
+
   // === INPUT MANUAL TAHUN ===
   if (uiRefs.calendarYearLabel && uiRefs.calendarYearLabel.tagName === "INPUT") {
     const yearInput = uiRefs.calendarYearLabel;
@@ -2978,8 +3041,10 @@ function setupInteractions() {
   if (uiRefs.mainWrapper) {
     uiRefs.mainWrapper.addEventListener("scroll", updateMobileNavFab);
   }
-  window.addEventListener("scroll", updateMobileNavFab);
-  window.addEventListener("resize", updateMobileNavFab);
+    window.addEventListener("resize", () => {
+    updateMobileNavFab();
+    renderCalendarYear(currentYear); // 🔽 rerender kalender sesuai mode baru
+  });
 
   // set awal
   updateMobileNavFab();
